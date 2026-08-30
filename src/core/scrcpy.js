@@ -1,4 +1,4 @@
-import { run, spawnDetached, spawnProcess } from './command.js';
+import { run, spawnPersistentChecked, spawnProcess } from './command.js';
 import { detectVirtualWorkspaceCapabilities } from './virtualWorkspace.js';
 
 let cachedCapabilities;
@@ -56,8 +56,9 @@ export function buildScrcpyArgs({
   return args;
 }
 
-export function launchScrcpy(options = {}) {
-  return spawnDetached('scrcpy', buildScrcpyArgs(options));
+export async function launchScrcpy(options = {}) {
+  const started = await spawnPersistentChecked('scrcpy', buildScrcpyArgs(options));
+  return started.pid;
 }
 
 export function launchScrcpyProcess(options = {}) {
