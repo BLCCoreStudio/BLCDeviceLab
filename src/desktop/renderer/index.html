@@ -13,6 +13,7 @@
       <div class="brand-mark" aria-hidden="true">B</div>
       <nav aria-label="Primary">
         <button class="nav-button active" data-target="devices" title="Devices">⌁</button>
+        <button class="nav-button" data-target="capture" title="Capture & Test">◉</button>
         <button class="nav-button" data-target="apps" title="Applications">▦</button>
         <button class="nav-button" data-target="connect" title="Wireless connect">⌁+</button>
         <button class="nav-button" data-target="doctor" title="Device Doctor">✦</button>
@@ -57,6 +58,23 @@
           <div class="empty-icon">⌁</div><h3>No devices detected</h3>
           <p>Connect a USB device with debugging enabled or use Wireless Pairing below.</p>
         </div>
+      </section>
+
+      <section id="capture" class="workspace-section panel capture-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">CAPTURE & TEST</p><h2>Capture a real-device session</h2></div>
+          <span id="captureStatus" class="pill">Idle</span>
+        </div>
+        <div class="capture-toolbar">
+          <label>Device<select id="captureDeviceSelect"></select></label>
+          <label>Profile<select id="captureProfileSelect"></select></label>
+          <button id="screenshotButton" class="button secondary">Screenshot</button>
+          <button id="recordButton" class="button primary">Start recording</button>
+        </div>
+        <div id="activeRecording" class="recording-strip hidden"></div>
+        <div class="capture-history-heading"><strong>Recent captures</strong><span class="muted">Stored locally on this computer</span></div>
+        <div id="captureHistory" class="capture-history"></div>
+        <p id="captureEmpty" class="muted app-empty">No captures yet.</p>
       </section>
 
       <section id="apps" class="workspace-section panel app-manager">
