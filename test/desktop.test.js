@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const rendererUrl = new URL('../src/desktop/renderer/index.html', import.meta.url);
 const appUrl = new URL('../src/desktop/renderer/app.js', import.meta.url);
+const viewsCssUrl = new URL('../src/desktop/renderer/views.css', import.meta.url);
 
 async function rendererFiles() {
   const [html, renderer] = await Promise.all([
@@ -78,6 +79,18 @@ test('connection badge distinguishes connected, warning and disconnected states'
   assert.match(renderer, /state = 'disconnected'/);
   assert.match(renderer, /device needs attention/);
   assert.match(renderer, /devices need attention/);
+});
+
+test('connection and doctor status tones exist in the loaded view stylesheet', async () => {
+  const [html, css] = await Promise.all([
+    readFile(rendererUrl, 'utf8'),
+    readFile(viewsCssUrl, 'utf8'),
+  ]);
+  assert.match(html, /href="views\.css"/);
+  assert.match(css, /\.connection-badge\.connected\s*\{/);
+  assert.match(css, /\.connection-badge\.warning\s*\{/);
+  assert.match(css, /\.connection-badge\.disconnected\s*\{/);
+  assert.match(css, /\.health\.warn\s*\{/);
 });
 
 test('Device Doctor treats no device as a warning state, not a failed tool probe', async () => {
