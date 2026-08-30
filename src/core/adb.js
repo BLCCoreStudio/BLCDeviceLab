@@ -3,13 +3,18 @@ import { assertCapturePath } from './capturePath.js';
 import { run, runBinary } from './command.js';
 import { parseBattery, parsePackages, parseStorage } from './deviceInfo.js';
 
+const DEVICE_STATE_PATTERN = /(device|offline|unauthorized|recovery|sideload|bootloader|no permissions)/;
+
 export function parseDevices(output) {
   const lines = output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const start = lines.findIndex((line) => line.startsWith('List of devices attached'));
   if (start < 0) return [];
 
-  return lines.slice(start + 1).map((line) => {
-    const [serial, state, ...tokens] = line.split(/\s+/);
+  return lines.slice(start + 1).flatMap((line) => {
+    const match = line.match(new RegExp(`^(.+?)\\s+${DEVICE_STATE_PATTERN.source}(?:\\s+|$)(.*)$`));
+    if (!match) return [];
+    const [, serial, state, remainder] = match;
+    const tokens = remainder.trim() ? remainder.trim().split(/\s+/) : [];
     const metadata = Object.fromEntries(
       tokens
         .filter((token) => token.includes(':'))
@@ -18,7 +23,7 @@ export function parseDevices(output) {
           return [token.slice(0, index), token.slice(index + 1)];
         }),
     );
-    return { serial, state, metadata, raw: line };
+    return [{ serial, state, metadata, raw: line }];
   });
 }
 
