@@ -20,6 +20,18 @@ test('parseDevices parses multiple adb device states and metadata', () => {
   ]);
 });
 
+test('parseDevices keeps duplicate mDNS service suffixes inside the serial', () => {
+  const output = `List of devices attached\nadb-d9a39502-YtXTMK (2)._adb-tls-connect._tcp offline product:RMX3311TR model:RMX3311 device:RE58B2L1 transport_id:3\n`;
+  assert.deepEqual(parseDevices(output), [
+    {
+      serial: 'adb-d9a39502-YtXTMK (2)._adb-tls-connect._tcp',
+      state: 'offline',
+      metadata: { product: 'RMX3311TR', model: 'RMX3311', device: 'RE58B2L1', transport_id: '3' },
+      raw: 'adb-d9a39502-YtXTMK (2)._adb-tls-connect._tcp offline product:RMX3311TR model:RMX3311 device:RE58B2L1 transport_id:3',
+    },
+  ]);
+});
+
 test('parseDevices returns empty array for unexpected output', () => {
   assert.deepEqual(parseDevices('adb server version mismatch'), []);
 });
