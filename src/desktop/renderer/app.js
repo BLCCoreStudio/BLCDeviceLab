@@ -8,8 +8,15 @@ const readyCount = document.querySelector('#readyCount');
 const lastUpdated = document.querySelector('#lastUpdated');
 const notice = document.querySelector('#notice');
 const refreshButton = document.querySelector('#refreshButton');
+const appDeviceSelect = document.querySelector('#appDeviceSelect');
+const appSearch = document.querySelector('#appSearch');
+const appList = document.querySelector('#appList');
+const appEmpty = document.querySelector('#appEmpty');
+const loadAppsButton = document.querySelector('#loadAppsButton');
 
 let snapshot;
+let loadedApps = [];
+let loadedAppsSerial = null;
 
 function showNotice(message, kind = 'good') {
   notice.textContent = message;
@@ -34,6 +41,45 @@ function button(label, className, onClick, disabled = false) {
   return element;
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return 'Unknown';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+}
+
+function detailCell(label, value) {
+  const cell = document.createElement('div');
+  cell.className = 'detail-cell';
+  const key = document.createElement('span');
+  key.textContent = label;
+  const data = document.createElement('strong');
+  data.textContent = value ?? 'Unknown';
+  cell.append(key, data);
+  return cell;
+}
+
+function renderDetails(container, details) {
+  const grid = document.createElement('div');
+  grid.className = 'detail-grid';
+  const battery = details.battery;
+  const storage = details.storage;
+  grid.append(
+    detailCell('Device', [details.manufacturer, details.model].filter(Boolean).join(' ') || 'Unknown'),
+    detailCell('Android', details.androidVersion ? `${details.androidVersion}${details.sdk ? ` · API ${details.sdk}` : ''}` : 'Unknown'),
+    detailCell('Battery', battery?.percentage === null || battery?.percentage === undefined ? 'Unknown' : `${battery.percentage}% · ${battery.statusLabel}`),
+    detailCell('Temperature', battery?.temperatureC === null || battery?.temperatureC === undefined ? 'Unknown' : `${battery.temperatureC.toFixed(1)} °C`),
+    detailCell('Storage used', storage ? `${storage.usePercent}% · ${formatBytes(storage.usedBytes)}` : 'Unknown'),
+    detailCell('Storage free', storage ? formatBytes(storage.availableBytes) : 'Unknown'),
+  );
+  container.replaceChildren(grid);
+}
+
 function renderDevices() {
   deviceGrid.replaceChildren();
   const devices = snapshot?.devices ?? [];
@@ -44,10 +90,20 @@ function renderDevices() {
   readyCount.textContent = String(ready.length);
   emptyDevices.classList.toggle('hidden', devices.length > 0);
 
+  const previousSelected = appDeviceSelect.value;
+  appDeviceSelect.replaceChildren();
+  for (const device of ready) {
+    const option = document.createElement('option');
+    option.value = device.serial;
+    option.textContent = (device.metadata.model || device.serial).replaceAll('_', ' ');
+    appDeviceSelect.append(option);
+  }
+  if (ready.some((device) => device.serial === previousSelected)) appDeviceSelect.value = previousSelected;
+  loadAppsButton.disabled = ready.length === 0;
+
   for (const device of devices) {
     const card = document.createElement('article');
     card.className = 'device-card';
-
     const titleRow = document.createElement('div');
     titleRow.className = 'device-title-row';
     const identity = document.createElement('div');
@@ -94,9 +150,54 @@ function renderDevices() {
       else showNotice(result.error || 'APK installation failed.', 'bad');
     }, !isReady);
 
-    actions.append(select, mirrorButton, installButton);
-    card.append(titleRow, actions);
+    const detailsBox = document.createElement('div');
+    detailsBox.className = 'device-details hidden';
+    const inspectButton = button('Inspect', 'ghost', async () => {
+      if (!detailsBox.classList.contains('hidden')) {
+        detailsBox.classList.add('hidden');
+        return;
+      }
+      setBusy(inspectButton, true, 'Reading…');
+      const result = await api.details(device.serial);
+      setBusy(inspectButton, false);
+      if (!result.ok) {
+        showNotice(result.error || 'Could not inspect device.', 'bad');
+        return;
+      }
+      renderDetails(detailsBox, result.data);
+      detailsBox.classList.remove('hidden');
+    }, !isReady);
+
+    actions.append(select, mirrorButton, installButton, inspectButton);
+    card.append(titleRow, actions, detailsBox);
     deviceGrid.append(card);
+  }
+}
+
+function renderApps() {
+  appList.replaceChildren();
+  const term = appSearch.value.trim().toLowerCase();
+  const apps = loadedApps.filter((packageName) => packageName.toLowerCase().includes(term));
+  appEmpty.classList.toggle('hidden', apps.length > 0);
+  appEmpty.textContent = loadedApps.length === 0
+    ? 'Choose a ready device and load its user-installed packages.'
+    : 'No packages match this filter.';
+
+  for (const packageName of apps) {
+    const row = document.createElement('div');
+    row.className = 'app-row';
+    const label = document.createElement('div');
+    label.className = 'app-package';
+    label.textContent = packageName;
+    const launchButton = button('Open', 'ghost', async () => {
+      setBusy(launchButton, true, 'Opening…');
+      const result = await api.launchApp(loadedAppsSerial, packageName);
+      setBusy(launchButton, false);
+      if (result.ok) showNotice(result.message || `Opened ${packageName}.`);
+      else showNotice(result.error || 'Could not open application.', 'bad');
+    });
+    row.append(label, launchButton);
+    appList.append(row);
   }
 }
 
@@ -167,6 +268,27 @@ document.querySelector('#connectButton').addEventListener('click', (event) => {
   runFormAction(event.currentTarget, () => api.connect(document.querySelector('#connectAddress').value), 'Connecting…');
 });
 
+loadAppsButton.addEventListener('click', async () => {
+  const serial = appDeviceSelect.value;
+  if (!serial) return;
+  setBusy(loadAppsButton, true, 'Loading…');
+  const result = await api.apps(serial);
+  setBusy(loadAppsButton, false);
+  if (!result.ok) {
+    showNotice(result.error || 'Could not load applications.', 'bad');
+    return;
+  }
+  loadedAppsSerial = serial;
+  loadedApps = result.data;
+  renderApps();
+});
+
+appSearch.addEventListener('input', renderApps);
+appDeviceSelect.addEventListener('change', () => {
+  loadedApps = [];
+  loadedAppsSerial = null;
+  renderApps();
+});
 refreshButton.addEventListener('click', refresh);
 for (const navButton of document.querySelectorAll('.nav-button')) {
   navButton.addEventListener('click', () => {

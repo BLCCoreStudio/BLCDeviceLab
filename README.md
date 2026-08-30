@@ -14,6 +14,8 @@ The first desktop shell now includes:
 - three constrained mirror profiles: Balanced, Low latency and High quality;
 - one-click workspace launch for an explicitly selected ready device;
 - APK file selection and install for the selected device;
+- on-demand device inspection for Android version, API level, battery, temperature and storage;
+- a constrained user-app package launcher that never exposes arbitrary shell input;
 - a hardened Electron preload boundary with context isolation and no renderer Node access.
 
 The product still keeps third-party engines outside our repository:

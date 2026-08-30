@@ -3,8 +3,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   connectWireless,
+  getDeviceDetails,
   getDeviceSnapshot,
+  getUserApplications,
   installPackage,
+  launchApplication,
   mirrorDevice,
   pairWireless,
 } from '../core/deviceService.js';
@@ -27,6 +30,9 @@ async function safeAction(action) {
 
 function registerIpc() {
   ipcMain.handle('device:snapshot', () => safeAction(async () => ({ ok: true, data: await getDeviceSnapshot() })));
+  ipcMain.handle('device:details', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getDeviceDetails(payload.serial) })));
+  ipcMain.handle('device:apps', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getUserApplications(payload.serial) })));
+  ipcMain.handle('device:launch-app', (_event, payload = {}) => safeAction(() => launchApplication(payload.serial, payload.packageName)));
   ipcMain.handle('device:pair', (_event, payload = {}) => safeAction(() => pairWireless(payload.address, payload.code)));
   ipcMain.handle('device:connect', (_event, payload = {}) => safeAction(() => connectWireless(payload.address)));
   ipcMain.handle('device:mirror', (_event, payload = {}) => safeAction(() => mirrorDevice(payload.serial, payload.profile)));
