@@ -6,6 +6,7 @@ const hints = document.querySelector('#hints');
 const deviceCount = document.querySelector('#deviceCount');
 const readyCount = document.querySelector('#readyCount');
 const lastUpdated = document.querySelector('#lastUpdated');
+const connectionBadge = document.querySelector('.connection-badge');
 const notice = document.querySelector('#notice');
 const refreshButton = document.querySelector('#refreshButton');
 const appDeviceSelect = document.querySelector('#appDeviceSelect');
@@ -110,6 +111,9 @@ function renderDevices() {
 
   deviceCount.textContent = `${devices.length} detected`;
   readyCount.textContent = String(ready.length);
+  connectionBadge.textContent = ready.length === 0
+    ? 'No device connected'
+    : `${ready.length} device${ready.length === 1 ? '' : 's'} connected`;
   emptyDevices.classList.toggle('hidden', devices.length > 0);
 
   const appSelected = preferredReadySerial(ready, appDeviceSelect.value);
@@ -282,29 +286,36 @@ function renderApps() {
   }
 }
 
-function doctorCard(label, probe) {
+function doctorCard(label, probe, readyLabel = 'READY', attentionLabel = 'NEEDS ATTENTION') {
   const card = document.createElement('article'); card.className = 'doctor-card';
   const title = document.createElement('strong'); title.textContent = label;
-  const status = document.createElement('span'); status.className = `health ${probe?.ok ? 'good' : 'bad'}`; status.textContent = probe?.ok ? 'READY' : 'NEEDS ATTENTION';
+  const status = document.createElement('span'); status.className = `health ${probe?.ok ? 'good' : 'bad'}`; status.textContent = probe?.ok ? readyLabel : attentionLabel;
   card.append(title, status); return card;
 }
 
 function renderDoctor() {
   doctorGrid.replaceChildren(); hints.replaceChildren();
   const diagnostics = snapshot?.diagnostics; if (!diagnostics) return;
-  doctorGrid.append(doctorCard('ADB bridge', diagnostics.adb), doctorCard('scrcpy engine', diagnostics.scrcpy), doctorCard('Device scan', diagnostics.devices));
+  const ready = readyDevices();
+  const connected = { ok: ready.length > 0 };
+  doctorGrid.append(
+    doctorCard('ADB bridge', diagnostics.adb),
+    doctorCard('scrcpy engine', diagnostics.scrcpy),
+    doctorCard('Connected device', connected, `${ready.length} DEVICE${ready.length === 1 ? '' : 'S'}`, 'NO DEVICE'),
+  );
   for (const message of diagnostics.hints) { const item = document.createElement('div'); item.className = 'hint'; item.textContent = message; hints.append(item); }
 }
 
 function updateTimestamp(value) {
   if (!value) return;
-  lastUpdated.textContent = `Updated ${new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  lastUpdated.textContent = `Last scan ${new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function applyDeviceUpdate(update) {
   if (!initialized || !snapshot || !Array.isArray(update?.devices)) return;
   snapshot = { ...snapshot, devices: update.devices, updatedAt: update.updatedAt || new Date().toISOString() };
   renderDevices();
+  renderDoctor();
   updateTimestamp(snapshot.updatedAt);
   const recovered = (update.changes || []).find((change) =>
     change.type === 'connected' && change.state === 'device'
