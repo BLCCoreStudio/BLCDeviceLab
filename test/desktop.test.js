@@ -96,6 +96,7 @@ test('connection and doctor status tones exist in the loaded view stylesheet', a
 test('Device Doctor treats no device as a warning state, not a failed tool probe', async () => {
   const { renderer } = await rendererFiles();
   assert.match(renderer, /'NO DEVICE'/);
+  assert.match(renderer, /DEVICE\$\{devices\.length === 1 \? '' : 'S'\} NEED/);
   assert.match(renderer, /doctorCard\('Connected device',[\s\S]*'warn'\)/);
   assert.match(renderer, /doctorCard\('ADB bridge', diagnostics\.adb\)/);
   assert.match(renderer, /doctorCard\('scrcpy engine', diagnostics\.scrcpy\)/);
