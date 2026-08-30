@@ -31,8 +31,13 @@ switch (command) {
     break;
   case 'mirror': {
     const serial = args[0];
-    const pid = launchScrcpy({ serial, stayAwake: true });
-    console.log(`scrcpy started${serial ? ` for ${serial}` : ''} (pid ${pid})`);
+    try {
+      const pid = await launchScrcpy({ serial, stayAwake: true });
+      console.log(`scrcpy started${serial ? ` for ${serial}` : ''} (pid ${pid})`);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : 'Could not start scrcpy.');
+      process.exitCode = 1;
+    }
     break;
   }
   default:
