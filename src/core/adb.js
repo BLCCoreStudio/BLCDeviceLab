@@ -1,4 +1,5 @@
 import { run } from './command.js';
+import { parseBattery, parsePackages, parseStorage } from './deviceInfo.js';
 
 export function parseDevices(output) {
   const lines = output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -17,6 +18,10 @@ export function parseDevices(output) {
     );
     return { serial, state, metadata, raw: line };
   });
+}
+
+function shell(serial, args) {
+  return run('adb', ['-s', serial, 'shell', ...args]);
 }
 
 export async function adbVersion() {
@@ -44,4 +49,29 @@ export async function installApk(serial, apkPath, { replace = true } = {}) {
   if (replace) args.push('-r');
   args.push(apkPath);
   return run('adb', args);
+}
+
+export async function readProperty(serial, property) {
+  const result = await shell(serial, ['getprop', property]);
+  return result.code === 0 ? result.stdout.trim() : '';
+}
+
+export async function readBattery(serial) {
+  const result = await shell(serial, ['dumpsys', 'battery']);
+  return result.code === 0 ? parseBattery(result.stdout) : null;
+}
+
+export async function readStorage(serial) {
+  const result = await shell(serial, ['df', '-k', '/data']);
+  return result.code === 0 ? parseStorage(result.stdout) : null;
+}
+
+export async function listUserPackages(serial) {
+  const result = await shell(serial, ['pm', 'list', 'packages', '-3']);
+  if (result.code !== 0) throw new Error(result.stderr.trim() || 'Could not list applications.');
+  return parsePackages(result.stdout);
+}
+
+export async function launchPackage(serial, packageName) {
+  return shell(serial, ['monkey', '-p', packageName, '-c', 'android.intent.category.LAUNCHER', '1']);
 }

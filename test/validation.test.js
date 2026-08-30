@@ -19,3 +19,11 @@ test('pair codes and serials are constrained before reaching process calls', () 
   assert.equal(normalizeSerial('192.168.1.118:42837'), '192.168.1.118:42837');
   assert.throws(() => normalizeSerial('device; rm -rf /'), /Invalid device identifier/);
 });
+
+import { normalizePackageName } from '../src/shared/validation.js';
+
+test('package names are validated before application launch', () => {
+  assert.equal(normalizePackageName('com.example.editor'), 'com.example.editor');
+  assert.throws(() => normalizePackageName('com.example.editor;id'), /Invalid application package/);
+  assert.throws(() => normalizePackageName('singleword'), /Invalid application package/);
+});

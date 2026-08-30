@@ -13,6 +13,7 @@
       <div class="brand-mark" aria-hidden="true">B</div>
       <nav aria-label="Primary">
         <button class="nav-button active" data-target="devices" title="Devices">⌁</button>
+        <button class="nav-button" data-target="apps" title="Applications">▦</button>
         <button class="nav-button" data-target="connect" title="Wireless connect">⌁+</button>
         <button class="nav-button" data-target="doctor" title="Device Doctor">✦</button>
       </nav>
@@ -36,7 +37,7 @@
           <span class="status-dot"></span>
           <span class="eyebrow">LOCAL-FIRST CONTROL CENTER</span>
           <h2>Your real phone, treated like a device lab.</h2>
-          <p>Connect, diagnose, mirror and install builds without memorizing ADB commands.</p>
+          <p>Connect, inspect, diagnose, mirror and install builds without memorizing ADB commands.</p>
         </div>
         <div class="hero-metric">
           <strong id="readyCount">0</strong>
@@ -48,24 +49,32 @@
 
       <section id="devices" class="workspace-section">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">DEVICES</p>
-            <h2>Connected hardware</h2>
-          </div>
+          <div><p class="eyebrow">DEVICES</p><h2>Connected hardware</h2></div>
           <span id="deviceCount" class="pill">0 detected</span>
         </div>
         <div id="deviceGrid" class="device-grid" aria-live="polite"></div>
         <div id="emptyDevices" class="empty panel">
-          <div class="empty-icon">⌁</div>
-          <h3>No devices detected</h3>
+          <div class="empty-icon">⌁</div><h3>No devices detected</h3>
           <p>Connect a USB device with debugging enabled or use Wireless Pairing below.</p>
         </div>
       </section>
 
+      <section id="apps" class="workspace-section panel app-manager">
+        <div class="section-heading">
+          <div><p class="eyebrow">APPLICATION MANAGER</p><h2>Open installed user apps</h2></div>
+        </div>
+        <div class="app-toolbar">
+          <label>Device<select id="appDeviceSelect"></select></label>
+          <label>Filter<input id="appSearch" type="search" placeholder="Search package name…"></label>
+          <button id="loadAppsButton" class="button secondary">Load apps</button>
+        </div>
+        <div id="appList" class="app-list"></div>
+        <p id="appEmpty" class="muted app-empty">Choose a ready device and load its user-installed packages.</p>
+      </section>
+
       <section id="connect" class="workspace-section split-grid">
         <article class="panel form-panel">
-          <p class="eyebrow">WIRELESS PAIRING</p>
-          <h2>Pair a new device</h2>
+          <p class="eyebrow">WIRELESS PAIRING</p><h2>Pair a new device</h2>
           <p class="muted">Enter the address and six-digit code shown by Wireless debugging on your phone.</p>
           <label>Pairing address<input id="pairAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:37123"></label>
           <label>Pairing code<input id="pairCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>
@@ -73,8 +82,7 @@
         </article>
 
         <article class="panel form-panel">
-          <p class="eyebrow">WIRELESS CONNECT</p>
-          <h2>Connect an existing device</h2>
+          <p class="eyebrow">WIRELESS CONNECT</p><h2>Connect an existing device</h2>
           <p class="muted">Use the IP address and port shown on the main Wireless debugging screen.</p>
           <label>Device address<input id="connectAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:42837"></label>
           <button id="connectButton" class="button primary">Connect device</button>
@@ -82,12 +90,7 @@
       </section>
 
       <section id="doctor" class="workspace-section">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">DEVICE DOCTOR</p>
-            <h2>Connection health</h2>
-          </div>
-        </div>
+        <div class="section-heading"><div><p class="eyebrow">DEVICE DOCTOR</p><h2>Connection health</h2></div></div>
         <div id="doctorGrid" class="doctor-grid"></div>
         <div id="hints" class="hint-stack"></div>
       </section>
