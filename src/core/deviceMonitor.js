@@ -21,16 +21,16 @@ export function diffDevices(previous = [], next = []) {
   for (const [identity, device] of after) {
     const old = before.get(identity);
     if (!old) {
-      changes.push({ type: 'connected', serial: device.serial, identity, state: device.state });
+      changes.push({ type: 'connected', serial: device.serial, state: device.state });
       continue;
     }
     if (old.state !== device.state) {
-      changes.push({ type: 'state', serial: device.serial, identity, from: old.state, to: device.state });
+      changes.push({ type: 'state', serial: device.serial, from: old.state, to: device.state });
     }
   }
 
   for (const [identity, device] of before) {
-    if (!after.has(identity)) changes.push({ type: 'disconnected', serial: device.serial, identity, state: device.state });
+    if (!after.has(identity)) changes.push({ type: 'disconnected', serial: device.serial, state: device.state });
   }
 
   return changes;
