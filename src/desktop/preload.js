@@ -9,4 +9,8 @@ contextBridge.exposeInMainWorld('blcDeviceLab', Object.freeze({
   connect: (address) => ipcRenderer.invoke('device:connect', { address }),
   mirror: (serial, profile) => ipcRenderer.invoke('device:mirror', { serial, profile }),
   installApk: (serial) => ipcRenderer.invoke('device:install-apk', { serial }),
+  screenshot: (serial) => ipcRenderer.invoke('capture:screenshot', { serial }),
+  startRecording: (serial, profile) => ipcRenderer.invoke('capture:start-recording', { serial, profile }),
+  stopRecording: (id) => ipcRenderer.invoke('capture:stop-recording', { id }),
+  captureState: () => ipcRenderer.invoke('capture:state'),
 }));

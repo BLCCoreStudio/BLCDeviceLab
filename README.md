@@ -16,6 +16,8 @@ The first desktop shell now includes:
 - APK file selection and install for the selected device;
 - on-demand device inspection for Android version, API level, battery, temperature and storage;
 - a constrained user-app package launcher that never exposes arbitrary shell input;
+- PNG screenshots captured directly from the selected device;
+- controlled scrcpy recording sessions with MP4/MKV output and local capture history;
 - a hardened Electron preload boundary with context isolation and no renderer Node access.
 
 The product still keeps third-party engines outside our repository:

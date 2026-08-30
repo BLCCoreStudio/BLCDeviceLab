@@ -1,4 +1,5 @@
 import {
+  captureScreenshot,
   connect,
   installApk,
   launchPackage,
@@ -11,6 +12,7 @@ import {
 } from './adb.js';
 import { doctor } from './diagnostics.js';
 import { getProfile, listProfiles } from './profiles.js';
+import { listActiveRecordings, startRecording, stopRecording } from './recordingService.js';
 import { launchScrcpy } from './scrcpy.js';
 import { normalizeAddress, normalizePackageName, normalizePairCode, normalizeSerial } from '../shared/validation.js';
 
@@ -108,4 +110,23 @@ export async function installPackage(serial, apkPath) {
   }
   const result = await installApk(device.serial, apkPath, { replace: true });
   return actionResult(result, 'APK installed.');
+}
+
+export async function captureDeviceScreenshot(serial, filePath) {
+  const device = await requireReadyDevice(serial);
+  const result = await captureScreenshot(device.serial, filePath);
+  return { ok: true, bytes: result.bytes, filePath };
+}
+
+export async function startDeviceRecording(serial, filePath, profileId = 'balanced', withPlayback = true) {
+  const device = await requireReadyDevice(serial);
+  return startRecording({ serial: device.serial, filePath, profileId, withPlayback });
+}
+
+export async function stopDeviceRecording(recordingId) {
+  return stopRecording(recordingId);
+}
+
+export function getActiveRecordings() {
+  return listActiveRecordings();
 }
