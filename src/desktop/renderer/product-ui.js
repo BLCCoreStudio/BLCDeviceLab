@@ -2,6 +2,15 @@ const readyCount = document.querySelector('#readyCount');
 const deviceCount = document.querySelector('#deviceCount');
 const connectionBadge = document.querySelector('#connectionBadge');
 const doctorGrid = document.querySelector('#doctorGrid');
+const brandIcon = document.querySelector('.brand-icon');
+
+if (brandIcon) {
+  const useBundledIcon = () => {
+    if (!brandIcon.src.endsWith('/assets/app-icon.png')) brandIcon.src = '../assets/app-icon.png';
+  };
+  brandIcon.addEventListener('error', useBundledIcon, { once: true });
+  if (brandIcon.complete && brandIcon.naturalWidth === 0) useBundledIcon();
+}
 
 function numberFrom(element) {
   const match = String(element?.textContent || '').match(/\d+/);
