@@ -1,0 +1,64 @@
+import { connect, installApk, listDevices, pair } from './adb.js';
+import { doctor } from './diagnostics.js';
+import { getProfile, listProfiles } from './profiles.js';
+import { launchScrcpy } from './scrcpy.js';
+import { normalizeAddress, normalizePairCode, normalizeSerial } from '../shared/validation.js';
+
+function actionResult(result, fallback) {
+  const message = (result.stdout || result.stderr || fallback || '').trim();
+  if (result.code !== 0) throw new Error(message || `Command failed with exit code ${result.code}.`);
+  return { ok: true, message };
+}
+
+export async function getDeviceSnapshot() {
+  const report = await doctor();
+  const devices = report.probes.devices.ok ? report.probes.devices.details : [];
+  return {
+    devices,
+    diagnostics: {
+      adb: report.probes.adb,
+      scrcpy: report.probes.scrcpy,
+      devices: report.probes.devices,
+      hints: report.hints,
+    },
+    profiles: listProfiles(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function requireReadyDevice(serial) {
+  const normalized = normalizeSerial(serial);
+  const devices = await listDevices();
+  const device = devices.find((candidate) => candidate.serial === normalized);
+  if (!device) throw new Error('That device is no longer connected. Refresh and try again.');
+  if (device.state !== 'device') {
+    throw new Error(`Device is ${device.state}. Resolve the connection warning before continuing.`);
+  }
+  return device;
+}
+
+export async function pairWireless(address, code) {
+  const result = await pair(normalizeAddress(address), normalizePairCode(code));
+  return actionResult(result, 'Pairing completed.');
+}
+
+export async function connectWireless(address) {
+  const result = await connect(normalizeAddress(address));
+  return actionResult(result, 'Connection completed.');
+}
+
+export async function mirrorDevice(serial, profileId = 'balanced') {
+  const device = await requireReadyDevice(serial);
+  const profile = getProfile(profileId);
+  const pid = launchScrcpy({ serial: device.serial, ...profile.options });
+  return { ok: true, pid, profile: profile.id };
+}
+
+export async function installPackage(serial, apkPath) {
+  const device = await requireReadyDevice(serial);
+  if (typeof apkPath !== 'string' || !apkPath.toLowerCase().endsWith('.apk')) {
+    throw new Error('Select a valid APK file.');
+  }
+  const result = await installApk(device.serial, apkPath, { replace: true });
+  return actionResult(result, 'APK installed.');
+}
