@@ -121,7 +121,7 @@ export async function launchApplicationInVirtualWorkspace(serial, packageName, p
     throw new Error('The installed scrcpy version does not support this virtual workspace preset.');
   }
 
-  const pid = launchScrcpy({
+  const pid = await launchScrcpy({
     serial: device.serial,
     startApp: normalizedPackage,
     ...preset.options,
@@ -148,7 +148,7 @@ export async function connectWireless(address) {
 export async function mirrorDevice(serial, profileId = 'balanced') {
   const device = await requireReadyDevice(serial);
   const profile = getProfile(profileId);
-  const pid = launchScrcpy({ serial: device.serial, ...profile.options });
+  const pid = await launchScrcpy({ serial: device.serial, ...profile.options });
   return { ok: true, pid, profile: profile.id };
 }
 
