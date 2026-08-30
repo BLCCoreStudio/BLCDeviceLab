@@ -17,13 +17,24 @@ function showNotice(message, kind = 'good') {
   showNotice.timer = setTimeout(() => notice.classList.add('hidden'), 5000);
 }
 
+function layoutToolbar(enabled) {
+  if (!appToolbar) return;
+  appToolbar.style.gridTemplateColumns = enabled
+    ? 'minmax(160px,.75fr) minmax(190px,1.15fr) minmax(160px,.75fr) auto'
+    : '';
+}
+
 function ensurePresetPicker() {
   if (!virtualWorkspace.available || !virtualWorkspace.presets?.length) {
     presetSelect?.closest('label')?.remove();
     presetSelect = undefined;
+    layoutToolbar(false);
+    for (const button of appList?.querySelectorAll('[data-virtual-workspace-button="true"]') || []) button.remove();
+    for (const row of appList?.querySelectorAll('.app-row') || []) delete row.dataset.virtualWorkspaceEnhanced;
     return;
   }
 
+  layoutToolbar(true);
   if (!presetSelect) {
     const label = document.createElement('label');
     label.dataset.virtualWorkspace = 'preset';
@@ -47,18 +58,18 @@ function ensurePresetPicker() {
 }
 
 function enhanceAppRows() {
+  if (!virtualWorkspace.available || !virtualWorkspace.presets?.length) return;
   for (const row of appList?.querySelectorAll('.app-row') || []) {
     if (row.dataset.virtualWorkspaceEnhanced === 'true') continue;
-    row.dataset.virtualWorkspaceEnhanced = 'true';
-    if (!virtualWorkspace.available || !virtualWorkspace.presets?.length) continue;
-
     const packageLabel = row.querySelector('.app-package');
     if (!packageLabel) continue;
     const packageName = packageLabel.textContent?.trim();
     if (!packageName) continue;
 
+    row.dataset.virtualWorkspaceEnhanced = 'true';
     const openButton = document.createElement('button');
     openButton.className = 'button ghost';
+    openButton.dataset.virtualWorkspaceButton = 'true';
     openButton.textContent = 'Virtual workspace';
     openButton.addEventListener('click', async () => {
       const serial = appDeviceSelect?.value;
@@ -88,4 +99,9 @@ async function refreshCapability() {
 const observer = new MutationObserver(enhanceAppRows);
 if (appList) observer.observe(appList, { childList: true });
 refreshButton?.addEventListener('click', () => setTimeout(() => { void refreshCapability(); }, 350));
+window.addEventListener('resize', () => {
+  if (!appToolbar) return;
+  if (window.innerWidth <= 980) appToolbar.style.gridTemplateColumns = '1fr';
+  else layoutToolbar(virtualWorkspace.available && Boolean(virtualWorkspace.presets?.length));
+});
 void refreshCapability();
