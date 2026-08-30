@@ -3,16 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>BLC Device Lab</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="product.css">
 </head>
 <body>
   <div class="shell">
     <aside class="rail">
       <div class="brand-lockup">
-        <img class="brand-icon" src="app-icon.png" alt="BLC Device Lab">
+        <img class="brand-icon" src="../assets/app-icon.png" alt="">
         <div class="brand-copy">
           <strong>BLC</strong>
           <span>DEVICE LAB</span>
@@ -20,7 +19,7 @@
       </div>
 
       <nav aria-label="Primary">
-        <button class="nav-button active" data-target="home" title="Home"><span class="nav-glyph">⌂</span><span>Home</span></button>
+        <button class="nav-button active" data-target="devices" title="Home"><span class="nav-glyph">⌂</span><span>Home</span></button>
         <button class="nav-button" data-target="devices" title="Workspace"><span class="nav-glyph">▣</span><span>Workspace</span></button>
         <button class="nav-button" data-target="apps" title="Applications"><span class="nav-glyph">⊞</span><span>Apps</span></button>
         <button class="nav-button" data-target="capture" title="Capture & Test"><span class="nav-glyph">◉</span><span>Capture & Test</span></button>
@@ -39,7 +38,7 @@
       <header class="topbar">
         <div class="topbar-title">
           <h1>BLC Device Lab</h1>
-          <span id="connectionBadge" class="connection-badge offline" aria-live="polite"><span class="status-dot"></span><span class="connection-label">No device connected</span></span>
+          <span class="connection-badge"><span class="status-dot"></span>Connection: Live</span>
         </div>
         <div class="top-actions">
           <span id="lastUpdated" class="muted">Not scanned yet</span>
@@ -47,7 +46,7 @@
         </div>
       </header>
 
-      <section id="home" class="hero panel workspace-section">
+      <section class="hero panel">
         <div class="hero-copy">
           <div class="hero-kicker"><span class="status-dot"></span><span class="eyebrow">LOCAL-FIRST CONTROL CENTER</span></div>
           <h2>Your real phone, treated like a device lab.</h2>
@@ -138,14 +137,22 @@
         <div id="hints" class="hint-stack"></div>
       </section>
 
+      <section class="workspace-section roadmap-section" aria-label="Product roadmap">
+        <div class="section-heading"><div><p class="eyebrow">BLC LAB ENGINES</p><h2>Where the product goes next</h2></div></div>
+        <div class="roadmap-grid">
+          <article class="roadmap-card continuity-card"><span class="roadmap-tag">IN DEVELOPMENT</span><div class="roadmap-icon">∞</div><h3>Continuity Engine</h3><p>Seamless USB ↔ Wi-Fi handoff, connection scoring and session recovery.</p></article>
+          <article class="roadmap-card repro-card"><span class="roadmap-tag">PLANNED</span><div class="roadmap-icon">◇</div><h3>Repro Capsule</h3><p>Capture steps, environment and optional evidence into a reproducible bug capsule.</p></article>
+          <article class="roadmap-card twin-card"><span class="roadmap-tag">PLANNED</span><div class="roadmap-icon">▥</div><h3>Device Twin</h3><p>Track device state over time and explain what changed between working sessions.</p></article>
+        </div>
+      </section>
+
       <footer class="status-footer">
         <span>✓ All changes stay local unless you explicitly export them.</span>
-        <span><span class="status-dot"></span>BLC Device Lab · local session</span>
+        <span><span class="status-dot"></span>BLC Device Lab · alpha</span>
       </footer>
     </main>
   </div>
   <script type="module" src="app.js"></script>
   <script type="module" src="virtual-workspace.js"></script>
-  <script type="module" src="product-ui.js"></script>
 </body>
 </html>
