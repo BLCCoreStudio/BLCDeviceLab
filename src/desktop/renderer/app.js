@@ -22,6 +22,10 @@ const captureStatus = document.querySelector('#captureStatus');
 const activeRecording = document.querySelector('#activeRecording');
 const captureHistory = document.querySelector('#captureHistory');
 const captureEmpty = document.querySelector('#captureEmpty');
+const viewPanels = [...document.querySelectorAll('[data-view-panel]')];
+const navButtons = [...document.querySelectorAll('.nav-button[data-view]')];
+const openViewButtons = [...document.querySelectorAll('[data-open-view]')];
+const validViews = new Set(viewPanels.map((panel) => panel.dataset.viewPanel));
 
 let snapshot;
 let loadedApps = [];
@@ -29,6 +33,22 @@ let loadedAppsSerial = null;
 let captureState = { active: [], history: [] };
 let workspaceSession = { preferredSerial: null, preferredProfile: 'balanced' };
 let initialized = false;
+
+function showView(viewName) {
+  if (!validViews.has(viewName)) return;
+  for (const panel of viewPanels) {
+    const active = panel.dataset.viewPanel === viewName;
+    panel.classList.toggle('hidden', !active);
+    panel.setAttribute('aria-hidden', String(!active));
+  }
+  for (const navButton of navButtons) {
+    const active = navButton.dataset.view === viewName;
+    navButton.classList.toggle('active', active);
+    if (active) navButton.setAttribute('aria-current', 'page');
+    else navButton.removeAttribute('aria-current');
+  }
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
 
 function showNotice(message, kind = 'good') {
   notice.textContent = message;
@@ -91,6 +111,22 @@ function readyDevices() {
   return (snapshot?.devices ?? []).filter((device) => device.state === 'device');
 }
 
+function renderConnectionState(devices, ready) {
+  let state = 'disconnected';
+  let label = 'No device connected';
+  if (ready.length > 0) {
+    state = 'connected';
+    label = `${ready.length} device${ready.length === 1 ? '' : 's'} connected`;
+  } else if (devices.length > 0) {
+    state = 'warning';
+    label = devices.length === 1 ? '1 device needs attention' : `${devices.length} devices need attention`;
+  }
+  connectionBadge.textContent = label;
+  connectionBadge.dataset.state = state;
+  connectionBadge.classList.remove('connected', 'warning', 'disconnected');
+  connectionBadge.classList.add(state);
+}
+
 function preferredReadySerial(ready, previous) {
   if (ready.some((device) => device.serial === previous)) return previous;
   if (ready.some((device) => device.serial === workspaceSession.preferredSerial)) return workspaceSession.preferredSerial;
@@ -111,9 +147,7 @@ function renderDevices() {
 
   deviceCount.textContent = `${devices.length} detected`;
   readyCount.textContent = String(ready.length);
-  connectionBadge.textContent = ready.length === 0
-    ? 'No device connected'
-    : `${ready.length} device${ready.length === 1 ? '' : 's'} connected`;
+  renderConnectionState(devices, ready);
   emptyDevices.classList.toggle('hidden', devices.length > 0);
 
   const appSelected = preferredReadySerial(ready, appDeviceSelect.value);
@@ -286,22 +320,29 @@ function renderApps() {
   }
 }
 
-function doctorCard(label, probe, readyLabel = 'READY', attentionLabel = 'NEEDS ATTENTION') {
+function doctorCard(label, probe, readyLabel = 'READY', attentionLabel = 'NEEDS ATTENTION', attentionTone = 'bad') {
   const card = document.createElement('article'); card.className = 'doctor-card';
   const title = document.createElement('strong'); title.textContent = label;
-  const status = document.createElement('span'); status.className = `health ${probe?.ok ? 'good' : 'bad'}`; status.textContent = probe?.ok ? readyLabel : attentionLabel;
+  const ok = Boolean(probe?.ok);
+  const status = document.createElement('span');
+  status.className = `health ${ok ? 'good' : attentionTone}`;
+  status.textContent = ok ? readyLabel : attentionLabel;
   card.append(title, status); return card;
 }
 
 function renderDoctor() {
   doctorGrid.replaceChildren(); hints.replaceChildren();
   const diagnostics = snapshot?.diagnostics; if (!diagnostics) return;
+  const devices = snapshot?.devices ?? [];
   const ready = readyDevices();
   const connected = { ok: ready.length > 0 };
+  const noReadyLabel = devices.length > 0
+    ? `${devices.length} NEED${devices.length === 1 ? 'S' : ''} ATTENTION`
+    : 'NO DEVICE';
   doctorGrid.append(
     doctorCard('ADB bridge', diagnostics.adb),
     doctorCard('scrcpy engine', diagnostics.scrcpy),
-    doctorCard('Connected device', connected, `${ready.length} DEVICE${ready.length === 1 ? '' : 'S'}`, 'NO DEVICE'),
+    doctorCard('Connected device', connected, `${ready.length} DEVICE${ready.length === 1 ? '' : 'S'}`, noReadyLabel, 'warn'),
   );
   for (const message of diagnostics.hints) { const item = document.createElement('div'); item.className = 'hint'; item.textContent = message; hints.append(item); }
 }
@@ -390,12 +431,11 @@ appDeviceSelect.addEventListener('change', () => {
   if (appDeviceSelect.value) void rememberWorkspace({ preferredSerial: appDeviceSelect.value });
 });
 refreshButton.addEventListener('click', refresh);
-for (const navButton of document.querySelectorAll('.nav-button')) {
-  navButton.addEventListener('click', () => {
-    document.querySelector(`#${navButton.dataset.target}`).scrollIntoView({ behavior: 'smooth' });
-    document.querySelectorAll('.nav-button').forEach((candidate) => candidate.classList.remove('active'));
-    navButton.classList.add('active');
-  });
+for (const navButton of navButtons) {
+  navButton.addEventListener('click', () => showView(navButton.dataset.view));
+}
+for (const openViewButton of openViewButtons) {
+  openViewButton.addEventListener('click', () => showView(openViewButton.dataset.openView));
 }
 
 api.onDeviceUpdate(applyDeviceUpdate);
@@ -407,6 +447,7 @@ api.onSelfHeal((payload) => {
 });
 
 async function initialize() {
+  showView('home');
   const sessionResult = await api.workspaceSession();
   if (sessionResult?.ok) workspaceSession = sessionResult.data;
   await refresh();
