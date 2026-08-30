@@ -9,8 +9,18 @@ test('desktop renderer keeps a strict local content security policy', async () =
   assert.match(html, /connect-src 'none'/);
 });
 
-test('preload exposes a narrow API instead of raw ipcRenderer', async () => {
+test('sandboxed preload uses Electron-compatible CommonJS and exposes only the narrow bridge', async () => {
   const preload = await readFile(new URL('../src/desktop/preload.js', import.meta.url), 'utf8');
+  assert.match(preload, /require\(['"]electron['"]\)/);
+  assert.doesNotMatch(preload, /^\s*import\s/m);
   assert.match(preload, /contextBridge\.exposeInMainWorld\('blcDeviceLab'/);
   assert.doesNotMatch(preload, /exposeInMainWorld\([^\n]+ipcRenderer\s*[,) ]/);
+});
+
+test('desktop keeps renderer sandbox and context isolation enabled', async () => {
+  const main = await readFile(new URL('../src/desktop/main.js', import.meta.url), 'utf8');
+  assert.match(main, /preload:\s*join\(__dirname, 'preload\.js'\)/);
+  assert.match(main, /contextIsolation:\s*true/);
+  assert.match(main, /nodeIntegration:\s*false/);
+  assert.match(main, /sandbox:\s*true/);
 });
