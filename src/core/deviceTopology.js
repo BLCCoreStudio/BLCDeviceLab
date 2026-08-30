@@ -1,5 +1,3 @@
-import { listDevices } from './adb.js';
-
 const MDNS_MARKER = '._adb-tls-connect._tcp';
 
 function metadataSignature(device) {
@@ -57,9 +55,7 @@ function addToGroup(group, device) {
 
 function buildLogicalDevice(group) {
   const members = [...group.members].sort((a, b) => transportRank(b) - transportRank(a));
-  const primary = members[0];
-  const ready = members.find((member) => member.state === 'device');
-  const selected = ready && transportRank(ready) >= transportRank(primary) ? ready : primary;
+  const selected = members[0];
   const metadata = Object.assign({}, ...members.map((member) => member.metadata || {}));
   return {
     serial: selected.serial,
@@ -147,8 +143,4 @@ export function collapseDevices(devices = []) {
   }
 
   return [...groups.values()].map(buildLogicalDevice);
-}
-
-export async function listLogicalDevices() {
-  return collapseDevices(await listDevices());
 }
