@@ -13,6 +13,7 @@ import {
   getUserApplications,
   installPackage,
   launchApplication,
+  launchApplicationInVirtualWorkspace,
   mirrorDevice,
   pairWireless,
   startDeviceRecording,
@@ -143,6 +144,8 @@ function registerIpc() {
   ipcMain.handle('device:details', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getDeviceDetails(payload.serial) })));
   ipcMain.handle('device:apps', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getUserApplications(payload.serial) })));
   ipcMain.handle('device:launch-app', (_event, payload = {}) => safeAction(() => launchApplication(payload.serial, payload.packageName)));
+  ipcMain.handle('device:launch-virtual-app', (_event, payload = {}) => safeAction(() =>
+    launchApplicationInVirtualWorkspace(payload.serial, payload.packageName, payload.preset)));
   ipcMain.handle('device:pair', (_event, payload = {}) => safeAction(() => pairWireless(payload.address, payload.code)));
   ipcMain.handle('device:connect', (_event, payload = {}) => safeAction(async () => {
     const address = normalizeAddress(payload.address);
