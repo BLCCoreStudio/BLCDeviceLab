@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { assertCapturePath } from './capturePath.js';
 import { run, runBinary } from './command.js';
 import { parseBattery, parsePackages, parseStorage } from './deviceInfo.js';
+import { collapseDevices } from './deviceTopology.js';
 
 const DEVICE_STATE_PATTERN = /(device|offline|unauthorized|recovery|sideload|bootloader|no permissions)/;
 
@@ -40,7 +41,7 @@ export async function listDevices() {
   if (result.code !== 0) {
     throw new Error(result.stderr.trim() || `adb exited with ${result.code}`);
   }
-  return parseDevices(result.stdout);
+  return collapseDevices(parseDevices(result.stdout));
 }
 
 export async function pair(address, code) {
