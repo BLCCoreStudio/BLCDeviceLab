@@ -337,7 +337,7 @@ function renderDoctor() {
   const ready = readyDevices();
   const connected = { ok: ready.length > 0 };
   const noReadyLabel = devices.length > 0
-    ? `${devices.length} NEED${devices.length === 1 ? 'S' : ''} ATTENTION`
+    ? `${devices.length} DEVICE${devices.length === 1 ? '' : 'S'} NEED${devices.length === 1 ? 'S' : ''} ATTENTION`
     : 'NO DEVICE';
   doctorGrid.append(
     doctorCard('ADB bridge', diagnostics.adb),
