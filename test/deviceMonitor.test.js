@@ -18,6 +18,12 @@ test('diffDevices reports connect, disconnect and state transitions', () => {
   ]);
 });
 
+test('diffDevices keeps one physical device stable when its preferred transport changes', () => {
+  const previous = [{ serial: 'd9a39502', identity: 'd9a39502', state: 'device', metadata: {} }];
+  const next = [{ serial: '192.168.1.122:42701', identity: 'd9a39502', state: 'device', metadata: {} }];
+  assert.deepEqual(diffDevices(previous, next), []);
+});
+
 test('planReconnects only retries missing endpoints after cooldown', () => {
   const attempts = new Map([
     ['192.168.1.20:40000', 90_000],
@@ -36,6 +42,23 @@ test('planReconnects only retries missing endpoints after cooldown', () => {
       15_000,
     ),
     ['192.168.1.30:40000'],
+  );
+});
+
+test('planReconnects recognizes a ready wireless endpoint nested under a logical device', () => {
+  const devices = [{
+    serial: 'd9a39502',
+    identity: 'd9a39502',
+    state: 'device',
+    metadata: {},
+    transports: [
+      { serial: 'd9a39502', type: 'usb', state: 'device' },
+      { serial: '192.168.1.122:42701', type: 'wifi', state: 'device' },
+    ],
+  }];
+  assert.deepEqual(
+    planReconnects(['192.168.1.122:42701'], devices, new Map(), 100_000, 15_000),
+    [],
   );
 });
 
