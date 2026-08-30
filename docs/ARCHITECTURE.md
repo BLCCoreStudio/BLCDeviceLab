@@ -5,32 +5,42 @@
 Keep the product layer ours and upstream engines replaceable.
 
 ```text
-UI (future desktop shell)
+Electron renderer (untrusted UI)
         |
-BLC Workspace / Automation
+restricted preload API
         |
-BLC Device Core
-  |        |        |
-ADB      scrcpy   Diagnostics
-  |        |        |
+Electron main process
+        |
+BLC Device Service
+   |         |         |
+Diagnostics Profiles Validation
+   |                   |
+ADB adapter       scrcpy adapter
+   |                   |
 external executables / OS services
 ```
 
-## Phase 0 modules
+## Security boundary
 
-- `command.js`: safe child-process boundary.
+The renderer has `nodeIntegration: false`, `contextIsolation: true`, a local-only Content Security Policy and a narrow preload API. It cannot execute arbitrary ADB/shell commands. Pairing addresses, pairing codes and serials are validated in the privileged process layer, and mirror settings are selected from named profiles rather than renderer-supplied command flags.
+
+## Phase 1 modules
+
+- `command.js`: child-process boundary; commands and arguments are never concatenated into a shell string.
 - `adb.js`: version/device discovery, pairing, connection and APK installation primitives.
-- `scrcpy.js`: option builder and external process launcher.
-- `diagnostics.js`: user-facing probes and recovery hints.
-- `cli.js`: thin validation surface before GUI work begins.
+- `scrcpy.js`: constrained option builder and external process launcher.
+- `diagnostics.js`: probes and recovery hints.
+- `profiles.js`: fixed quality/latency profiles.
+- `deviceService.js`: privileged product operations and ready-device checks.
+- `validation.js`: input constraints before privileged calls.
+- `desktop/main.js`: Electron lifecycle and IPC handlers.
+- `desktop/preload.js`: explicit renderer capability surface.
+- `desktop/renderer/*`: UI only; no Node or raw IPC access.
 
-## Phase 1 target
+## Next target
 
-Add a desktop UI only after the core can reliably:
-
-1. Detect 0/1/many connected devices.
-2. Distinguish unauthorized/offline/ready states.
-3. Pair and reconnect wireless devices.
-4. Launch scrcpy for an explicitly selected device.
-5. Install an APK to the selected device.
-6. Produce actionable diagnostic messages without exposing raw ADB commands to normal users.
+1. Reliable automatic refresh / reconnect state machine.
+2. Device detail view with battery/storage/OS metadata.
+3. App/package launcher without exposing arbitrary shell commands.
+4. Capture controls and session history.
+5. First signed development builds only after exact distribution license notices are automated.

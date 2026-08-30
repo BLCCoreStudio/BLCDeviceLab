@@ -4,11 +4,15 @@ This file is an engineering compliance checklist, not legal advice.
 
 ## Architecture rule
 
-During Phase 0, BLC Device Lab invokes `adb` and `scrcpy` as separate external programs. Do not copy upstream source into this repository and do not bundle third-party binaries until their exact license obligations are audited for each platform.
+BLC Device Lab invokes `adb` and `scrcpy` as separate external programs. Do not copy upstream source into this repository and do not bundle third-party binaries until their exact license obligations are audited for each platform.
 
 ## scrcpy
 
 scrcpy is published under Apache License 2.0. If we redistribute it or derivative source/object code, preserve the required license, copyright and attribution notices. The license does not grant trademark rights.
+
+## Electron
+
+The desktop shell currently declares Electron 44.0.0 as a development dependency. Electron's top-level project is MIT-licensed, but a packaged Electron runtime contains Chromium, Node.js and additional third-party components. Before distributing desktop binaries, collect notices from the exact packaged runtime and verify packaging obligations instead of relying only on the top-level Electron license.
 
 ## FFmpeg
 
@@ -27,7 +31,8 @@ Do not put `Android` in the product name. Use it only descriptively (for example
 Before shipping any installer:
 
 - Produce an SBOM.
-- Generate a third-party notices file from the exact shipped binaries.
+- Generate third-party notices from the exact shipped binaries.
 - Record exact upstream versions and hashes.
 - Verify source-offer/source-link obligations for every LGPL/GPL component.
+- Verify Electron/Chromium/Node third-party notices for the packaged runtime.
 - Verify icons, fonts, screenshots and other assets separately from code licenses.
