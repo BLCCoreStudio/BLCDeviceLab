@@ -26,6 +26,8 @@ let snapshot;
 let loadedApps = [];
 let loadedAppsSerial = null;
 let captureState = { active: [], history: [] };
+let workspaceSession = { preferredSerial: null, preferredProfile: 'balanced' };
+let initialized = false;
 
 function showNotice(message, kind = 'good') {
   notice.textContent = message;
@@ -84,6 +86,22 @@ function renderDetails(container, details) {
   container.replaceChildren(grid);
 }
 
+function readyDevices() {
+  return (snapshot?.devices ?? []).filter((device) => device.state === 'device');
+}
+
+function preferredReadySerial(ready, previous) {
+  if (ready.some((device) => device.serial === previous)) return previous;
+  if (ready.some((device) => device.serial === workspaceSession.preferredSerial)) return workspaceSession.preferredSerial;
+  return ready[0]?.serial || '';
+}
+
+async function rememberWorkspace(patch) {
+  workspaceSession = { ...workspaceSession, ...patch };
+  const result = await api.saveWorkspaceSession(workspaceSession);
+  if (result?.ok) workspaceSession = result.data;
+}
+
 function renderDevices() {
   deviceGrid.replaceChildren();
   const devices = snapshot?.devices ?? [];
@@ -94,7 +112,7 @@ function renderDevices() {
   readyCount.textContent = String(ready.length);
   emptyDevices.classList.toggle('hidden', devices.length > 0);
 
-  const previousSelected = appDeviceSelect.value;
+  const appSelected = preferredReadySerial(ready, appDeviceSelect.value);
   appDeviceSelect.replaceChildren();
   for (const device of ready) {
     const option = document.createElement('option');
@@ -102,10 +120,15 @@ function renderDevices() {
     option.textContent = (device.metadata.model || device.serial).replaceAll('_', ' ');
     appDeviceSelect.append(option);
   }
-  if (ready.some((device) => device.serial === previousSelected)) appDeviceSelect.value = previousSelected;
+  appDeviceSelect.value = appSelected;
   loadAppsButton.disabled = ready.length === 0;
+  if (loadedAppsSerial && !ready.some((device) => device.serial === loadedAppsSerial)) {
+    loadedApps = [];
+    loadedAppsSerial = null;
+    renderApps();
+  }
 
-  const previousCapture = captureDeviceSelect.value;
+  const captureSelected = preferredReadySerial(ready, captureDeviceSelect.value);
   captureDeviceSelect.replaceChildren();
   for (const device of ready) {
     const option = document.createElement('option');
@@ -113,7 +136,7 @@ function renderDevices() {
     option.textContent = (device.metadata.model || device.serial).replaceAll('_', ' ');
     captureDeviceSelect.append(option);
   }
-  if (ready.some((device) => device.serial === previousCapture)) captureDeviceSelect.value = previousCapture;
+  captureDeviceSelect.value = captureSelected;
 
   const previousProfile = captureProfileSelect.value;
   captureProfileSelect.replaceChildren();
@@ -123,7 +146,10 @@ function renderDevices() {
     option.textContent = profile.label;
     captureProfileSelect.append(option);
   }
-  if (profiles.some((profile) => profile.id === previousProfile)) captureProfileSelect.value = previousProfile;
+  const desiredProfile = profiles.some((profile) => profile.id === previousProfile)
+    ? previousProfile
+    : workspaceSession.preferredProfile;
+  if (profiles.some((profile) => profile.id === desiredProfile)) captureProfileSelect.value = desiredProfile;
   renderCaptureState();
 
   for (const device of devices) {
@@ -144,12 +170,17 @@ function renderDevices() {
     for (const profile of profiles) {
       const option = document.createElement('option'); option.value = profile.id; option.textContent = profile.label; select.append(option);
     }
+    if (device.serial === workspaceSession.preferredSerial && profiles.some((profile) => profile.id === workspaceSession.preferredProfile)) {
+      select.value = workspaceSession.preferredProfile;
+    }
     const mirrorButton = button('Open workspace', 'primary', async () => {
       setBusy(mirrorButton, true, 'Opening…');
       const result = await api.mirror(device.serial, select.value);
       setBusy(mirrorButton, false);
-      if (result.ok) showNotice(`Workspace started with ${select.options[select.selectedIndex].text}.`);
-      else showNotice(result.error || 'Could not start workspace.', 'bad');
+      if (result.ok) {
+        await rememberWorkspace({ preferredSerial: device.serial, preferredProfile: select.value });
+        showNotice(`Workspace started with ${select.options[select.selectedIndex].text}.`);
+      } else showNotice(result.error || 'Could not start workspace.', 'bad');
     }, !isReady);
     const installButton = button('Install APK', 'ghost', async () => {
       setBusy(installButton, true, 'Installing…');
@@ -195,10 +226,8 @@ function renderCaptureState() {
   if (selectedActive) {
     const meta = document.createElement('div');
     meta.className = 'recording-meta';
-    const title = document.createElement('strong');
-    title.textContent = 'Recording in progress';
-    const detail = document.createElement('span');
-    detail.textContent = `${selectedActive.fileName || 'Recording'} · ${selectedActive.profileId || 'balanced'}`;
+    const title = document.createElement('strong'); title.textContent = 'Recording in progress';
+    const detail = document.createElement('span'); detail.textContent = `${selectedActive.fileName || 'Recording'} · ${selectedActive.profileId || 'balanced'}`;
     meta.append(title, detail);
     const stop = button('Stop & finalize', 'secondary', async () => {
       setBusy(stop, true, 'Finalizing…');
@@ -215,23 +244,14 @@ function renderCaptureState() {
   screenshotButton.disabled = !selectedSerial;
 
   for (const entry of history.slice(0, 20)) {
-    const row = document.createElement('div');
-    row.className = 'capture-row';
-    const kind = document.createElement('div');
-    kind.className = 'capture-kind';
-    kind.textContent = entry.type === 'recording' ? '●' : '▣';
-    const file = document.createElement('div');
-    file.className = 'capture-file';
-    const name = document.createElement('strong');
-    name.textContent = entry.fileName || 'Capture';
-    const time = document.createElement('span');
-    time.textContent = formatCaptureTime(entry.endedAt || entry.createdAt || entry.startedAt);
+    const row = document.createElement('div'); row.className = 'capture-row';
+    const kind = document.createElement('div'); kind.className = 'capture-kind'; kind.textContent = entry.type === 'recording' ? '●' : '▣';
+    const file = document.createElement('div'); file.className = 'capture-file';
+    const name = document.createElement('strong'); name.textContent = entry.fileName || 'Capture';
+    const time = document.createElement('span'); time.textContent = formatCaptureTime(entry.endedAt || entry.createdAt || entry.startedAt);
     file.append(name, time);
-    const state = document.createElement('span');
-    state.className = `capture-state ${entry.status === 'recording' ? 'recording' : ''}`;
-    state.textContent = entry.status || 'completed';
-    row.append(kind, file, state);
-    captureHistory.append(row);
+    const state = document.createElement('span'); state.className = `capture-state ${entry.status === 'recording' ? 'recording' : ''}`; state.textContent = entry.status || 'completed';
+    row.append(kind, file, state); captureHistory.append(row);
   }
 }
 
@@ -276,32 +296,56 @@ function renderDoctor() {
   for (const message of diagnostics.hints) { const item = document.createElement('div'); item.className = 'hint'; item.textContent = message; hints.append(item); }
 }
 
+function updateTimestamp(value) {
+  if (!value) return;
+  lastUpdated.textContent = `Updated ${new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function applyDeviceUpdate(update) {
+  if (!initialized || !snapshot || !Array.isArray(update?.devices)) return;
+  snapshot = { ...snapshot, devices: update.devices, updatedAt: update.updatedAt || new Date().toISOString() };
+  renderDevices();
+  updateTimestamp(snapshot.updatedAt);
+  const recovered = (update.changes || []).find((change) =>
+    change.type === 'connected' && change.state === 'device'
+    || change.type === 'state' && change.to === 'device');
+  if (recovered) showNotice(`Device ready: ${recovered.serial}`);
+}
+
 async function refresh() {
   setBusy(refreshButton, true, 'Scanning…');
   const result = await api.snapshot();
   setBusy(refreshButton, false);
   if (!result.ok) { showNotice(result.error || 'Device scan failed.', 'bad'); return; }
-  snapshot = result.data; renderDevices(); renderDoctor();
+  snapshot = result.data;
+  renderDevices();
+  renderDoctor();
   await refreshCaptureState();
-  lastUpdated.textContent = `Updated ${new Date(snapshot.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  updateTimestamp(snapshot.updatedAt);
 }
 
 async function runFormAction(buttonElement, action, progressLabel) {
-  setBusy(buttonElement, true, progressLabel); const result = await action(); setBusy(buttonElement, false);
-  if (result.ok) { showNotice(result.message || 'Done.'); await refresh(); } else showNotice(result.error || 'Action failed.', 'bad');
+  setBusy(buttonElement, true, progressLabel);
+  const result = await action();
+  setBusy(buttonElement, false);
+  if (result.ok) { showNotice(result.message || 'Done.'); await refresh(); }
+  else showNotice(result.error || 'Action failed.', 'bad');
 }
 
 document.querySelector('#pairButton').addEventListener('click', (event) => runFormAction(event.currentTarget, () => api.pair(document.querySelector('#pairAddress').value, document.querySelector('#pairCode').value), 'Pairing…'));
 document.querySelector('#connectButton').addEventListener('click', (event) => runFormAction(event.currentTarget, () => api.connect(document.querySelector('#connectAddress').value), 'Connecting…'));
 loadAppsButton.addEventListener('click', async () => {
   const serial = appDeviceSelect.value; if (!serial) return;
-  setBusy(loadAppsButton, true, 'Loading…'); const result = await api.apps(serial); setBusy(loadAppsButton, false);
+  await rememberWorkspace({ preferredSerial: serial });
+  setBusy(loadAppsButton, true, 'Loading…');
+  const result = await api.apps(serial);
+  setBusy(loadAppsButton, false);
   if (!result.ok) { showNotice(result.error || 'Could not load applications.', 'bad'); return; }
   loadedAppsSerial = serial; loadedApps = result.data; renderApps();
 });
 screenshotButton.addEventListener('click', async () => {
-  const serial = captureDeviceSelect.value;
-  if (!serial) return;
+  const serial = captureDeviceSelect.value; if (!serial) return;
+  await rememberWorkspace({ preferredSerial: serial, preferredProfile: captureProfileSelect.value || 'balanced' });
   setBusy(screenshotButton, true, 'Capturing…');
   const result = await api.screenshot(serial);
   setBusy(screenshotButton, false);
@@ -309,10 +353,9 @@ screenshotButton.addEventListener('click', async () => {
   if (result.ok) { showNotice('Screenshot saved.'); await refreshCaptureState(); }
   else showNotice(result.error || 'Screenshot failed.', 'bad');
 });
-
 recordButton.addEventListener('click', async () => {
-  const serial = captureDeviceSelect.value;
-  if (!serial) return;
+  const serial = captureDeviceSelect.value; if (!serial) return;
+  await rememberWorkspace({ preferredSerial: serial, preferredProfile: captureProfileSelect.value || 'balanced' });
   setBusy(recordButton, true, 'Starting…');
   const result = await api.startRecording(serial, captureProfileSelect.value || 'balanced');
   setBusy(recordButton, false);
@@ -321,14 +364,42 @@ recordButton.addEventListener('click', async () => {
   else showNotice(result.error || 'Could not start recording.', 'bad');
 });
 
-captureDeviceSelect.addEventListener('change', renderCaptureState);
+captureDeviceSelect.addEventListener('change', () => {
+  renderCaptureState();
+  if (captureDeviceSelect.value) void rememberWorkspace({ preferredSerial: captureDeviceSelect.value });
+});
+captureProfileSelect.addEventListener('change', () => {
+  if (captureProfileSelect.value) void rememberWorkspace({ preferredProfile: captureProfileSelect.value });
+});
 appSearch.addEventListener('input', renderApps);
-appDeviceSelect.addEventListener('change', () => { loadedApps = []; loadedAppsSerial = null; renderApps(); });
+appDeviceSelect.addEventListener('change', () => {
+  loadedApps = [];
+  loadedAppsSerial = null;
+  renderApps();
+  if (appDeviceSelect.value) void rememberWorkspace({ preferredSerial: appDeviceSelect.value });
+});
 refreshButton.addEventListener('click', refresh);
 for (const navButton of document.querySelectorAll('.nav-button')) {
   navButton.addEventListener('click', () => {
     document.querySelector(`#${navButton.dataset.target}`).scrollIntoView({ behavior: 'smooth' });
-    document.querySelectorAll('.nav-button').forEach((candidate) => candidate.classList.remove('active')); navButton.classList.add('active');
+    document.querySelectorAll('.nav-button').forEach((candidate) => candidate.classList.remove('active'));
+    navButton.classList.add('active');
   });
 }
-refresh();
+
+api.onDeviceUpdate(applyDeviceUpdate);
+api.onMonitorError((payload) => {
+  if (initialized) showNotice(payload?.message || 'Automatic device monitoring paused.', 'bad');
+});
+api.onSelfHeal((payload) => {
+  if (initialized && payload?.ok) showNotice(`Wireless connection recovered: ${payload.address}`);
+});
+
+async function initialize() {
+  const sessionResult = await api.workspaceSession();
+  if (sessionResult?.ok) workspaceSession = sessionResult.data;
+  await refresh();
+  initialized = true;
+}
+
+void initialize();
