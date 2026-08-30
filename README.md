@@ -16,12 +16,17 @@ The desktop shell now includes:
 - local workspace preference restore for the last selected device and mirror profile;
 - three constrained mirror profiles: Balanced, Low latency and High quality;
 - one-click workspace launch for an explicitly selected ready device;
+- capability-gated virtual-display app workspaces with Responsive, Desktop 1080p and Tablet presets;
 - APK file selection and install for the selected device;
 - on-demand device inspection for Android version, API level, battery, temperature and storage;
 - a constrained user-app package launcher that never exposes arbitrary shell input;
 - PNG screenshots captured directly from the selected device;
 - controlled scrcpy recording sessions with MP4/MKV output and local capture history;
 - a hardened Electron preload boundary with context isolation and no renderer Node access.
+
+### Virtual workspace compatibility
+
+BLC Device Lab does not assume every installed scrcpy version supports virtual displays. It reads the local `scrcpy --help` output and only exposes presets whose required `--new-display`, `--start-app` and (for Responsive) `--flex-display` capabilities are actually present. App package identifiers and preset ids are validated in the privileged layer before launch.
 
 ### Reconnect privacy rule
 
@@ -57,7 +62,7 @@ No installer or release binary is published at this stage. Distribution licensin
 
 **Connect** — one-click USB/wireless connection, pairing, automatic refresh, bounded reconnect and self-healing diagnostics.
 
-**Work** — workspace/session restoration, app launcher, APK install, package tools, virtual-display workspaces and file/clipboard workflows.
+**Work** — workspace/session restoration, app launcher, APK install, capability-gated virtual-display workspaces and file/clipboard workflows.
 
 **Capture & Test** — screenshots, recording, device information, logs, repeatable profiles and creator/QA presets.
 

@@ -1,12 +1,12 @@
 {
   "name": "blc-device-lab",
-  "version": "0.5.0-alpha.1",
+  "version": "0.6.0-alpha.1",
   "private": true,
   "type": "module",
   "main": "src/desktop/main.js",
   "description": "Cross-platform physical Android device workspace powered by external adb and scrcpy executables.",
   "scripts": {
-    "check": "node --check src/cli.js && node --check src/core/adb.js && node --check src/core/scrcpy.js && node --check src/core/diagnostics.js && node --check src/core/deviceService.js && node --check src/core/deviceInfo.js && node --check src/core/deviceMonitor.js && node --check src/core/workspaceSession.js && node --check src/core/capturePath.js && node --check src/core/captureHistory.js && node --check src/core/recordingService.js && node --check src/core/profiles.js && node --check src/shared/validation.js && node --check src/desktop/main.js && node --check src/desktop/preload.js && node --check src/desktop/renderer/app.js",
+    "check": "node --check src/cli.js && node --check src/core/adb.js && node --check src/core/adbOutcome.js && node --check src/core/scrcpy.js && node --check src/core/diagnostics.js && node --check src/core/deviceService.js && node --check src/core/deviceInfo.js && node --check src/core/deviceMonitor.js && node --check src/core/workspaceSession.js && node --check src/core/virtualWorkspace.js && node --check src/core/capturePath.js && node --check src/core/captureHistory.js && node --check src/core/recordingService.js && node --check src/core/profiles.js && node --check src/shared/validation.js && node --check src/desktop/main.js && node --check src/desktop/preload.js && node --check src/desktop/renderer/app.js && node --check src/desktop/renderer/virtual-workspace.js",
     "test": "node --test",
     "desktop": "electron .",
     "doctor": "node src/cli.js doctor",

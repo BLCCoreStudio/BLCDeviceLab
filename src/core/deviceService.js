@@ -10,10 +10,16 @@ import {
   readProperty,
   readStorage,
 } from './adb.js';
+import { interpretConnectResult, interpretPairResult } from './adbOutcome.js';
 import { doctor } from './diagnostics.js';
 import { getProfile, listProfiles } from './profiles.js';
 import { listActiveRecordings, startRecording, stopRecording } from './recordingService.js';
-import { launchScrcpy } from './scrcpy.js';
+import { getScrcpyCapabilities, launchScrcpy } from './scrcpy.js';
+import {
+  canLaunchVirtualWorkspace,
+  getVirtualWorkspacePreset,
+  listVirtualWorkspacePresets,
+} from './virtualWorkspace.js';
 import { normalizeAddress, normalizePackageName, normalizePairCode, normalizeSerial } from '../shared/validation.js';
 
 function actionResult(result, fallback) {
@@ -22,9 +28,19 @@ function actionResult(result, fallback) {
   return { ok: true, message };
 }
 
+function requireWirelessOutcome(outcome) {
+  if (!outcome.ok) throw new Error(outcome.message || 'Wireless ADB operation failed.');
+  return outcome;
+}
+
 export async function getDeviceSnapshot() {
   const report = await doctor();
   const devices = report.probes.devices.ok ? report.probes.devices.details : [];
+  const capabilities = report.probes.scrcpy.ok
+    ? await getScrcpyCapabilities({ refresh: true })
+    : { newDisplay: false, flexDisplay: false, startApp: false };
+  const compatibleVirtualPresets = listVirtualWorkspacePresets().filter((preset) =>
+    canLaunchVirtualWorkspace(capabilities, getVirtualWorkspacePreset(preset.id)));
   return {
     devices,
     diagnostics: {
@@ -34,6 +50,11 @@ export async function getDeviceSnapshot() {
       hints: report.hints,
     },
     profiles: listProfiles(),
+    virtualWorkspace: {
+      available: compatibleVirtualPresets.length > 0,
+      capabilities,
+      presets: compatibleVirtualPresets,
+    },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -86,14 +107,42 @@ export async function launchApplication(serial, packageName) {
   return { ok: true, message: `Opened ${normalizedPackage}.` };
 }
 
+export async function launchApplicationInVirtualWorkspace(serial, packageName, presetId = 'responsive') {
+  const device = await requireReadyDevice(serial);
+  const normalizedPackage = normalizePackageName(packageName);
+  const packages = await listUserPackages(device.serial);
+  if (!packages.includes(normalizedPackage)) {
+    throw new Error('Reload the application list before opening a virtual workspace.');
+  }
+
+  const preset = getVirtualWorkspacePreset(presetId);
+  const capabilities = await getScrcpyCapabilities();
+  if (!canLaunchVirtualWorkspace(capabilities, preset)) {
+    throw new Error('The installed scrcpy version does not support this virtual workspace preset.');
+  }
+
+  const pid = launchScrcpy({
+    serial: device.serial,
+    startApp: normalizedPackage,
+    ...preset.options,
+  });
+  return {
+    ok: true,
+    pid,
+    packageName: normalizedPackage,
+    preset: preset.id,
+    message: `Opened ${normalizedPackage} in a ${preset.label} virtual workspace.`,
+  };
+}
+
 export async function pairWireless(address, code) {
   const result = await pair(normalizeAddress(address), normalizePairCode(code));
-  return actionResult(result, 'Pairing completed.');
+  return requireWirelessOutcome(interpretPairResult(result));
 }
 
 export async function connectWireless(address) {
   const result = await connect(normalizeAddress(address));
-  return actionResult(result, 'Connection completed.');
+  return requireWirelessOutcome(interpretConnectResult(result));
 }
 
 export async function mirrorDevice(serial, profileId = 'balanced') {

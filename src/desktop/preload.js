@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('blcDeviceLab', Object.freeze({
   details: (serial) => ipcRenderer.invoke('device:details', { serial }),
   apps: (serial) => ipcRenderer.invoke('device:apps', { serial }),
   launchApp: (serial, packageName) => ipcRenderer.invoke('device:launch-app', { serial, packageName }),
+  launchVirtualApp: (serial, packageName, preset) => ipcRenderer.invoke('device:launch-virtual-app', { serial, packageName, preset }),
   pair: (address, code) => ipcRenderer.invoke('device:pair', { address, code }),
   connect: (address) => ipcRenderer.invoke('device:connect', { address }),
   mirror: (serial, profile) => ipcRenderer.invoke('device:mirror', { serial, profile }),

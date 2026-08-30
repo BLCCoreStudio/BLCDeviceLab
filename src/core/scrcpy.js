@@ -1,7 +1,24 @@
 import { run, spawnDetached, spawnProcess } from './command.js';
+import { detectVirtualWorkspaceCapabilities } from './virtualWorkspace.js';
+
+let cachedCapabilities;
 
 export async function scrcpyVersion() {
   return run('scrcpy', ['--version']);
+}
+
+export async function scrcpyHelp() {
+  return run('scrcpy', ['--help']);
+}
+
+export async function getScrcpyCapabilities({ refresh = false } = {}) {
+  if (!refresh && cachedCapabilities) return cachedCapabilities;
+  const result = await scrcpyHelp();
+  const capabilities = result.code === 0
+    ? detectVirtualWorkspaceCapabilities(`${result.stdout}\n${result.stderr}`)
+    : { newDisplay: false, flexDisplay: false, startApp: false };
+  cachedCapabilities = capabilities;
+  return capabilities;
 }
 
 export function buildScrcpyArgs({
@@ -16,6 +33,9 @@ export function buildScrcpyArgs({
   noPlayback = false,
   noControl = false,
   noWindow = false,
+  newDisplay,
+  flexDisplay = false,
+  startApp,
 } = {}) {
   const args = [];
   if (serial) args.push('--serial', serial);
@@ -29,6 +49,10 @@ export function buildScrcpyArgs({
   if (noPlayback) args.push('--no-playback');
   if (noControl) args.push('--no-control');
   if (noWindow) args.push('--no-window');
+  if (newDisplay === true) args.push('--new-display');
+  else if (typeof newDisplay === 'string' && newDisplay) args.push(`--new-display=${newDisplay}`);
+  if (flexDisplay) args.push('--flex-display');
+  if (startApp) args.push(`--start-app=${startApp}`);
   return args;
 }
 
