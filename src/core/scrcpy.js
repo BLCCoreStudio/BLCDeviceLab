@@ -61,6 +61,6 @@ export async function launchScrcpy(options = {}) {
   return started.pid;
 }
 
-export function launchScrcpyProcess(options = {}) {
-  return spawnProcess('scrcpy', buildScrcpyArgs(options));
+export function launchScrcpyProcess(options = {}, processOptions = {}) {
+  return spawnProcess('scrcpy', buildScrcpyArgs(options), processOptions);
 }

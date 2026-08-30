@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readCaptureHistory, upsertCaptureHistory } from '../src/core/captureHistory.js';
 import { assertCapturePath } from '../src/core/capturePath.js';
+import { buildRecordingScrcpyOptions } from '../src/core/recordingService.js';
 import { buildScrcpyArgs } from '../src/core/scrcpy.js';
 
 test('capture paths are constrained by artifact type', () => {
@@ -29,6 +30,30 @@ test('recording arguments use scrcpy record mode without shell strings', () => {
     '--no-control',
     '--no-window',
   ]);
+});
+
+test('headless recording removes stay-awake when control is disabled', () => {
+  const headless = buildRecordingScrcpyOptions({
+    serial: 'device-1',
+    filePath: '/tmp/demo.mp4',
+    profileId: 'latency',
+    withPlayback: false,
+  });
+  assert.equal(headless.noControl, true);
+  assert.equal(headless.noPlayback, true);
+  assert.equal(headless.noWindow, true);
+  assert.equal(headless.stayAwake, false);
+  assert.doesNotMatch(buildScrcpyArgs(headless).join(' '), /--stay-awake/);
+
+  const interactive = buildRecordingScrcpyOptions({
+    serial: 'device-1',
+    filePath: '/tmp/demo.mp4',
+    profileId: 'latency',
+    withPlayback: true,
+  });
+  assert.equal(interactive.noControl, false);
+  assert.equal(interactive.stayAwake, true);
+  assert.match(buildScrcpyArgs(interactive).join(' '), /--stay-awake/);
 });
 
 test('capture history is local, bounded and upserts by id', async () => {

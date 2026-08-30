@@ -6,6 +6,7 @@ import { launchScrcpyProcess } from './scrcpy.js';
 
 const recordings = new Map();
 const events = new EventEmitter();
+const MAX_ERROR_BYTES = 8192;
 
 function publicRecording(recording) {
   const { child, ...publicFields } = recording;
@@ -21,22 +22,35 @@ export function onRecordingEnded(listener) {
   return () => events.off('ended', listener);
 }
 
-export function startRecording({ serial, filePath, profileId = 'balanced', withPlayback = true }) {
+export function buildRecordingScrcpyOptions({ serial, filePath, profileId = 'balanced', withPlayback = true }) {
   assertCapturePath(filePath, 'recording');
-  if ([...recordings.values()].some((recording) => recording.serial === serial)) {
-    throw new Error('This device already has an active recording.');
-  }
-
   const profile = getProfile(profileId);
-  const id = randomUUID();
-  const startedAt = new Date().toISOString();
-  const child = launchScrcpyProcess({
+  return {
     serial,
     ...profile.options,
+    // scrcpy rejects --stay-awake together with --no-control.
+    stayAwake: withPlayback ? Boolean(profile.options.stayAwake) : false,
     record: filePath,
     noPlayback: !withPlayback,
     noControl: !withPlayback,
     noWindow: !withPlayback,
+  };
+}
+
+export function startRecording({ serial, filePath, profileId = 'balanced', withPlayback = true }) {
+  if ([...recordings.values()].some((recording) => recording.serial === serial)) {
+    throw new Error('This device already has an active recording.');
+  }
+
+  const options = buildRecordingScrcpyOptions({ serial, filePath, profileId, withPlayback });
+  const profile = getProfile(profileId);
+  const id = randomUUID();
+  const startedAt = new Date().toISOString();
+  const child = launchScrcpyProcess(options, { stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  child.stderr?.setEncoding('utf8');
+  child.stderr?.on('data', (chunk) => {
+    if (stderr.length < MAX_ERROR_BYTES) stderr += chunk.slice(0, MAX_ERROR_BYTES - stderr.length);
   });
 
   const recording = {
@@ -55,12 +69,14 @@ export function startRecording({ serial, filePath, profileId = 'balanced', withP
   child.once('exit', (code, signal) => {
     if (!recordings.has(id)) return;
     recordings.delete(id);
+    const completed = code === 0 || signal === 'SIGINT';
     const ended = {
       ...publicRecording(recording),
-      status: code === 0 || signal === 'SIGINT' ? 'completed' : 'ended',
+      status: completed ? 'completed' : 'ended',
       endedAt: new Date().toISOString(),
       exitCode: code,
       signal,
+      ...(completed || !stderr.trim() ? {} : { error: stderr.trim() }),
     };
     events.emit('ended', ended);
   });
