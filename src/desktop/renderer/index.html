@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>BLC Device Lab</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="views.css">
 </head>
 <body>
   <div class="shell">
@@ -19,12 +20,12 @@
       </div>
 
       <nav aria-label="Primary">
-        <button class="nav-button active" data-target="devices" title="Home"><span class="nav-glyph">⌂</span><span>Home</span></button>
-        <button class="nav-button" data-target="devices" title="Workspace"><span class="nav-glyph">▣</span><span>Workspace</span></button>
-        <button class="nav-button" data-target="apps" title="Applications"><span class="nav-glyph">⊞</span><span>Apps</span></button>
-        <button class="nav-button" data-target="capture" title="Capture & Test"><span class="nav-glyph">◉</span><span>Capture & Test</span></button>
-        <button class="nav-button" data-target="connect" title="Wireless"><span class="nav-glyph">⌁</span><span>Wireless</span></button>
-        <button class="nav-button" data-target="doctor" title="Device Doctor"><span class="nav-glyph">✦</span><span>Doctor</span></button>
+        <button class="nav-button active" data-view="home" aria-controls="view-home" aria-current="page" title="Home"><span class="nav-glyph">⌂</span><span>Home</span></button>
+        <button class="nav-button" data-view="workspace" aria-controls="view-workspace" title="Workspace"><span class="nav-glyph">▣</span><span>Workspace</span></button>
+        <button class="nav-button" data-view="apps" aria-controls="view-apps" title="Applications"><span class="nav-glyph">⊞</span><span>Apps</span></button>
+        <button class="nav-button" data-view="capture" aria-controls="view-capture" title="Capture & Test"><span class="nav-glyph">◉</span><span>Capture & Test</span></button>
+        <button class="nav-button" data-view="wireless" aria-controls="view-wireless" title="Wireless"><span class="nav-glyph">⌁</span><span>Wireless</span></button>
+        <button class="nav-button" data-view="doctor" aria-controls="view-doctor" title="Device Doctor"><span class="nav-glyph">✦</span><span>Doctor</span></button>
       </nav>
 
       <div class="local-first-card">
@@ -38,7 +39,7 @@
       <header class="topbar">
         <div class="topbar-title">
           <h1>BLC Device Lab</h1>
-          <span class="connection-badge">No device connected</span>
+          <span class="connection-badge disconnected" data-state="disconnected" aria-live="polite">No device connected</span>
         </div>
         <div class="top-actions">
           <span id="lastUpdated" class="muted">Not scanned yet</span>
@@ -46,40 +47,88 @@
         </div>
       </header>
 
-      <section class="hero panel">
-        <div class="hero-copy">
-          <div class="hero-kicker"><span class="status-dot"></span><span class="eyebrow">LOCAL-FIRST CONTROL CENTER</span></div>
-          <h2>Your real phone, treated like a device lab.</h2>
-          <p>Connect, inspect, diagnose, mirror and install builds without memorizing ADB commands.</p>
-        </div>
-        <div class="hero-visual" aria-hidden="true">
-          <div class="hero-device"><span class="pulse-line">⌁</span></div>
-          <div class="hero-rack"><i></i><i></i><i></i></div>
-        </div>
-        <div class="hero-metric">
-          <strong id="readyCount">0</strong>
-          <span>ready devices</span>
-        </div>
-      </section>
-
       <div id="notice" class="notice hidden" role="status"></div>
 
-      <section id="devices" class="workspace-section">
-        <div class="section-heading">
-          <div><p class="eyebrow">DEVICES</p><h2>Connected hardware</h2></div>
-          <span id="deviceCount" class="pill">0 detected</span>
-        </div>
-        <div id="deviceGrid" class="device-grid" aria-live="polite"></div>
-        <div id="emptyDevices" class="empty panel">
-          <div class="empty-icon">⌁</div><h3>No devices detected</h3>
-          <p>Connect a USB device with debugging enabled or use Wireless Pairing below.</p>
-        </div>
+      <section id="view-home" class="app-view" data-view-panel="home" aria-labelledby="homeTitle">
+        <section class="hero panel">
+          <div class="hero-copy">
+            <div class="hero-kicker"><span class="status-dot"></span><span class="eyebrow">LOCAL-FIRST CONTROL CENTER</span></div>
+            <h2 id="homeTitle">Your real phone, treated like a device lab.</h2>
+            <p>Connect, inspect, diagnose, mirror and install builds without memorizing ADB commands.</p>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-device"><span class="pulse-line">⌁</span></div>
+            <div class="hero-rack"><i></i><i></i><i></i></div>
+          </div>
+          <div class="hero-metric">
+            <strong id="readyCount">0</strong>
+            <span>ready devices</span>
+          </div>
+        </section>
+
+        <section class="home-launcher" aria-label="Device Lab areas">
+          <div class="section-heading">
+            <div><p class="eyebrow">START HERE</p><h2>Choose what you want to do</h2></div>
+          </div>
+          <div class="quick-grid">
+            <article class="quick-card panel"><span class="quick-glyph">▣</span><div><h3>Workspace</h3><p>Open, inspect and install builds on connected hardware.</p></div><button class="button secondary" data-open-view="workspace">Open workspace</button></article>
+            <article class="quick-card panel"><span class="quick-glyph">⊞</span><div><h3>Applications</h3><p>Load user apps, launch them and use supported virtual workspaces.</p></div><button class="button secondary" data-open-view="apps">Manage apps</button></article>
+            <article class="quick-card panel"><span class="quick-glyph">◉</span><div><h3>Capture & Test</h3><p>Take screenshots and create local device recordings.</p></div><button class="button secondary" data-open-view="capture">Open capture</button></article>
+            <article class="quick-card panel"><span class="quick-glyph">⌁</span><div><h3>Wireless</h3><p>Pair a new device or connect an existing wireless endpoint.</p></div><button class="button secondary" data-open-view="wireless">Open wireless</button></article>
+            <article class="quick-card panel"><span class="quick-glyph">✦</span><div><h3>Device Doctor</h3><p>Check ADB, scrcpy and actual connected-device health separately.</p></div><button class="button secondary" data-open-view="doctor">Run diagnostics</button></article>
+          </div>
+        </section>
       </section>
 
-      <div class="tool-grid">
+      <section id="view-workspace" class="app-view hidden" data-view-panel="workspace" aria-labelledby="workspaceTitle" aria-hidden="true">
+        <div class="page-intro">
+          <p class="eyebrow">WORKSPACE</p>
+          <h2 id="workspaceTitle">Connected hardware</h2>
+          <p>Control ready physical devices, choose a mirror profile, inspect hardware details or install an APK.</p>
+        </div>
+        <section id="devices" class="workspace-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">DEVICES</p><h2>Physical devices</h2></div>
+            <span id="deviceCount" class="pill">0 detected</span>
+          </div>
+          <div id="deviceGrid" class="device-grid" aria-live="polite"></div>
+          <div id="emptyDevices" class="empty panel">
+            <div class="empty-icon">⌁</div><h3>No devices detected</h3>
+            <p>Connect a USB device with debugging enabled or use the Wireless screen to pair or connect one.</p>
+            <button class="button secondary" data-open-view="wireless">Open Wireless</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="view-apps" class="app-view hidden" data-view-panel="apps" aria-labelledby="appsTitle" aria-hidden="true">
+        <div class="page-intro">
+          <p class="eyebrow">APPLICATION MANAGER</p>
+          <h2 id="appsTitle">Manage and stage your apps</h2>
+          <p>Load user-installed packages from a ready device, launch an app or open it in a supported virtual workspace.</p>
+        </div>
+        <section id="apps" class="workspace-section panel app-manager">
+          <div class="section-heading compact-heading">
+            <div><p class="eyebrow">APPLICATIONS</p><h2>Installed user apps</h2></div>
+          </div>
+          <div class="app-toolbar">
+            <label>Device<select id="appDeviceSelect"></select></label>
+            <label>Filter<input id="appSearch" type="search" placeholder="Search package name…"></label>
+            <button id="loadAppsButton" class="button secondary">Load apps</button>
+          </div>
+          <div id="appList" class="app-list"></div>
+          <p id="appEmpty" class="muted app-empty">Choose a ready device and load its user-installed packages.</p>
+        </section>
+      </section>
+
+      <section id="view-capture" class="app-view hidden" data-view-panel="capture" aria-labelledby="captureTitle" aria-hidden="true">
+        <div class="page-intro">
+          <p class="eyebrow">CAPTURE & TEST</p>
+          <h2 id="captureTitle">Capture a real-device session</h2>
+          <p>Screenshots and recordings are created locally and stay on this machine unless you explicitly move or export them.</p>
+        </div>
         <section id="capture" class="workspace-section panel capture-panel">
           <div class="section-heading compact-heading">
-            <div><p class="eyebrow">CAPTURE & TEST</p><h2>Capture a real-device session</h2></div>
+            <div><p class="eyebrow">LOCAL CAPTURE</p><h2>Session controls</h2></div>
             <span id="captureStatus" class="pill">Idle</span>
           </div>
           <div class="capture-toolbar">
@@ -93,48 +142,49 @@
           <div id="captureHistory" class="capture-history"></div>
           <p id="captureEmpty" class="muted app-empty">No captures yet.</p>
         </section>
-
-        <section id="apps" class="workspace-section panel app-manager">
-          <div class="section-heading compact-heading">
-            <div><p class="eyebrow">APPLICATION MANAGER</p><h2>Manage and stage your apps</h2></div>
-          </div>
-          <div class="app-toolbar">
-            <label>Device<select id="appDeviceSelect"></select></label>
-            <label>Filter<input id="appSearch" type="search" placeholder="Search package name…"></label>
-            <button id="loadAppsButton" class="button secondary">Load apps</button>
-          </div>
-          <div id="appList" class="app-list"></div>
-          <p id="appEmpty" class="muted app-empty">Choose a ready device and load its user-installed packages.</p>
-        </section>
-      </div>
-
-      <section id="connect" class="workspace-section wireless-shell panel">
-        <div class="section-heading">
-          <div><p class="eyebrow">WIRELESS</p><h2>Pair or connect wirelessly</h2></div>
-          <span class="pill">ADB TLS</span>
-        </div>
-        <div class="split-grid">
-          <article class="form-panel inset-panel">
-            <p class="eyebrow">NEW DEVICE</p><h3>Pair a new device</h3>
-            <p class="muted">Use the address and six-digit code shown by Wireless debugging.</p>
-            <label>Pairing address<input id="pairAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:37123"></label>
-            <label>Pairing code<input id="pairCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>
-            <button id="pairButton" class="button primary">Pair device</button>
-          </article>
-
-          <article class="form-panel inset-panel">
-            <p class="eyebrow">EXISTING DEVICE</p><h3>Connect an existing device</h3>
-            <p class="muted">Use the IP address and port from the main Wireless debugging screen.</p>
-            <label>Device address<input id="connectAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:42837"></label>
-            <button id="connectButton" class="button primary">Connect device</button>
-          </article>
-        </div>
       </section>
 
-      <section id="doctor" class="workspace-section doctor-shell panel">
-        <div class="section-heading"><div><p class="eyebrow">DEVICE DOCTOR</p><h2>Connection health at a glance</h2></div><span class="pill good-pill">Local diagnostics</span></div>
-        <div id="doctorGrid" class="doctor-grid"></div>
-        <div id="hints" class="hint-stack"></div>
+      <section id="view-wireless" class="app-view hidden" data-view-panel="wireless" aria-labelledby="wirelessTitle" aria-hidden="true">
+        <div class="page-intro">
+          <p class="eyebrow">WIRELESS</p>
+          <h2 id="wirelessTitle">Pair or connect wirelessly</h2>
+          <p>Use Android Wireless debugging addresses directly. Successful connections are picked up by the same physical-device model used by USB.</p>
+        </div>
+        <section id="connect" class="workspace-section wireless-shell panel">
+          <div class="section-heading">
+            <div><p class="eyebrow">ADB TLS</p><h2>Wireless connection</h2></div>
+            <span class="pill">Local network</span>
+          </div>
+          <div class="split-grid">
+            <article class="form-panel inset-panel">
+              <p class="eyebrow">NEW DEVICE</p><h3>Pair a new device</h3>
+              <p class="muted">Use the pairing address and six-digit code shown by Wireless debugging.</p>
+              <label>Pairing address<input id="pairAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:37123"></label>
+              <label>Pairing code<input id="pairCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>
+              <button id="pairButton" class="button primary">Pair device</button>
+            </article>
+
+            <article class="form-panel inset-panel">
+              <p class="eyebrow">EXISTING DEVICE</p><h3>Connect an existing device</h3>
+              <p class="muted">Use the IP address and port from the main Wireless debugging screen.</p>
+              <label>Device address<input id="connectAddress" autocomplete="off" spellcheck="false" placeholder="192.168.1.20:42837"></label>
+              <button id="connectButton" class="button primary">Connect device</button>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section id="view-doctor" class="app-view hidden" data-view-panel="doctor" aria-labelledby="doctorTitle" aria-hidden="true">
+        <div class="page-intro">
+          <p class="eyebrow">DEVICE DOCTOR</p>
+          <h2 id="doctorTitle">Connection health at a glance</h2>
+          <p>Tool availability and physical-device presence are reported independently so a healthy ADB bridge is never mistaken for a connected phone.</p>
+        </div>
+        <section id="doctor" class="workspace-section doctor-shell panel">
+          <div class="section-heading"><div><p class="eyebrow">LOCAL DIAGNOSTICS</p><h2>Current health</h2></div><span class="pill good-pill">Local diagnostics</span></div>
+          <div id="doctorGrid" class="doctor-grid"></div>
+          <div id="hints" class="hint-stack"></div>
+        </section>
       </section>
 
       <footer class="status-footer">
