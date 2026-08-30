@@ -241,12 +241,13 @@ function registerIpc() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 780,
-    minWidth: 900,
-    minHeight: 620,
-    backgroundColor: '#0b0d12',
+    width: 1280,
+    height: 800,
+    minWidth: 960,
+    minHeight: 640,
+    backgroundColor: '#070b13',
     title: 'BLC Device Lab',
+    icon: join(__dirname, 'assets', 'app-icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
