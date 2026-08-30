@@ -1,4 +1,6 @@
-import { run } from './command.js';
+import { writeFile } from 'node:fs/promises';
+import { assertCapturePath } from './capturePath.js';
+import { run, runBinary } from './command.js';
 import { parseBattery, parsePackages, parseStorage } from './deviceInfo.js';
 
 export function parseDevices(output) {
@@ -74,4 +76,13 @@ export async function listUserPackages(serial) {
 
 export async function launchPackage(serial, packageName) {
   return shell(serial, ['monkey', '-p', packageName, '-c', 'android.intent.category.LAUNCHER', '1']);
+}
+
+export async function captureScreenshot(serial, filePath) {
+  assertCapturePath(filePath, 'screenshot');
+  const result = await runBinary('adb', ['-s', serial, 'exec-out', 'screencap', '-p']);
+  if (result.code !== 0) throw new Error(result.stderr.trim() || 'Could not capture screenshot.');
+  if (result.stdout.length === 0) throw new Error('The device returned an empty screenshot.');
+  await writeFile(filePath, result.stdout);
+  return { ok: true, bytes: result.stdout.length };
 }

@@ -1,0 +1,102 @@
+import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
+import { assertCapturePath } from './capturePath.js';
+import { getProfile } from './profiles.js';
+import { launchScrcpyProcess } from './scrcpy.js';
+
+const recordings = new Map();
+const events = new EventEmitter();
+
+function publicRecording(recording) {
+  const { child, ...publicFields } = recording;
+  return { ...publicFields };
+}
+
+export function listActiveRecordings() {
+  return [...recordings.values()].map(publicRecording);
+}
+
+export function onRecordingEnded(listener) {
+  events.on('ended', listener);
+  return () => events.off('ended', listener);
+}
+
+export function startRecording({ serial, filePath, profileId = 'balanced', withPlayback = true }) {
+  assertCapturePath(filePath, 'recording');
+  if ([...recordings.values()].some((recording) => recording.serial === serial)) {
+    throw new Error('This device already has an active recording.');
+  }
+
+  const profile = getProfile(profileId);
+  const id = randomUUID();
+  const startedAt = new Date().toISOString();
+  const child = launchScrcpyProcess({
+    serial,
+    ...profile.options,
+    record: filePath,
+    noPlayback: !withPlayback,
+    noControl: !withPlayback,
+    noWindow: !withPlayback,
+  });
+
+  const recording = {
+    id,
+    serial,
+    filePath,
+    profileId: profile.id,
+    withPlayback,
+    startedAt,
+    status: 'recording',
+    pid: child.pid,
+    child,
+  };
+  recordings.set(id, recording);
+
+  child.once('exit', (code, signal) => {
+    if (!recordings.has(id)) return;
+    recordings.delete(id);
+    const ended = {
+      ...publicRecording(recording),
+      status: code === 0 || signal === 'SIGINT' ? 'completed' : 'ended',
+      endedAt: new Date().toISOString(),
+      exitCode: code,
+      signal,
+    };
+    events.emit('ended', ended);
+  });
+
+  child.once('error', (error) => {
+    if (!recordings.has(id)) return;
+    recordings.delete(id);
+    events.emit('ended', {
+      ...publicRecording(recording),
+      status: 'failed',
+      endedAt: new Date().toISOString(),
+      error: error.message,
+    });
+  });
+
+  return publicRecording(recording);
+}
+
+export async function stopRecording(id) {
+  const recording = recordings.get(id);
+  if (!recording) throw new Error('That recording is no longer active.');
+
+  const ended = new Promise((resolve) => {
+    const handler = (result) => {
+      if (result.id !== id) return;
+      events.off('ended', handler);
+      resolve(result);
+    };
+    events.on('ended', handler);
+  });
+
+  const signaled = recording.child.kill('SIGINT');
+  if (!signaled) throw new Error('Could not stop the recording process.');
+
+  return Promise.race([
+    ended,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Recording is still finalizing. Try again in a moment.')), 5000)),
+  ]);
+}
