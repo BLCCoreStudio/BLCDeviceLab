@@ -1,30 +1,36 @@
 function cloneDevice(device) {
   return {
     serial: device.serial,
+    identity: device.identity || device.serial,
     state: device.state,
     metadata: { ...(device.metadata || {}) },
+    transports: (device.transports || []).map((transport) => ({ ...transport })),
     raw: device.raw,
   };
 }
 
+function deviceKey(device) {
+  return device.identity || device.serial;
+}
+
 export function diffDevices(previous = [], next = []) {
-  const before = new Map(previous.map((device) => [device.serial, device]));
-  const after = new Map(next.map((device) => [device.serial, device]));
+  const before = new Map(previous.map((device) => [deviceKey(device), device]));
+  const after = new Map(next.map((device) => [deviceKey(device), device]));
   const changes = [];
 
-  for (const [serial, device] of after) {
-    const old = before.get(serial);
+  for (const [identity, device] of after) {
+    const old = before.get(identity);
     if (!old) {
-      changes.push({ type: 'connected', serial, state: device.state });
+      changes.push({ type: 'connected', serial: device.serial, identity, state: device.state });
       continue;
     }
     if (old.state !== device.state) {
-      changes.push({ type: 'state', serial, from: old.state, to: device.state });
+      changes.push({ type: 'state', serial: device.serial, identity, from: old.state, to: device.state });
     }
   }
 
-  for (const [serial, device] of before) {
-    if (!after.has(serial)) changes.push({ type: 'disconnected', serial, state: device.state });
+  for (const [identity, device] of before) {
+    if (!after.has(identity)) changes.push({ type: 'disconnected', serial: device.serial, identity, state: device.state });
   }
 
   return changes;
@@ -32,13 +38,23 @@ export function diffDevices(previous = [], next = []) {
 
 export function deviceFingerprint(devices = []) {
   return [...devices]
-    .map((device) => `${device.serial}\u0000${device.state}\u0000${device.metadata?.model || ''}`)
+    .map((device) => {
+      const transports = (device.transports || [])
+        .map((transport) => `${transport.serial}:${transport.state}:${transport.type || ''}`)
+        .sort()
+        .join(',');
+      return `${deviceKey(device)}\u0000${device.serial}\u0000${device.state}\u0000${device.metadata?.model || ''}\u0000${transports}`;
+    })
     .sort()
     .join('\u0001');
 }
 
 export function planReconnects(endpoints, devices, lastAttempts, now = Date.now(), cooldownMs = 15000) {
-  const states = new Map(devices.map((device) => [device.serial, device.state]));
+  const states = new Map();
+  for (const device of devices) {
+    states.set(device.serial, device.state);
+    for (const transport of device.transports || []) states.set(transport.serial, transport.state);
+  }
   const unique = [...new Set(endpoints)];
   return unique.filter((address) => {
     const state = states.get(address);
