@@ -1,8 +1,18 @@
-import { connect, installApk, listDevices, pair } from './adb.js';
+import {
+  connect,
+  installApk,
+  launchPackage,
+  listDevices,
+  listUserPackages,
+  pair,
+  readBattery,
+  readProperty,
+  readStorage,
+} from './adb.js';
 import { doctor } from './diagnostics.js';
 import { getProfile, listProfiles } from './profiles.js';
 import { launchScrcpy } from './scrcpy.js';
-import { normalizeAddress, normalizePairCode, normalizeSerial } from '../shared/validation.js';
+import { normalizeAddress, normalizePackageName, normalizePairCode, normalizeSerial } from '../shared/validation.js';
 
 function actionResult(result, fallback) {
   const message = (result.stdout || result.stderr || fallback || '').trim();
@@ -35,6 +45,43 @@ export async function requireReadyDevice(serial) {
     throw new Error(`Device is ${device.state}. Resolve the connection warning before continuing.`);
   }
   return device;
+}
+
+export async function getDeviceDetails(serial) {
+  const device = await requireReadyDevice(serial);
+  const [manufacturer, model, androidVersion, sdk, battery, storage] = await Promise.all([
+    readProperty(device.serial, 'ro.product.manufacturer'),
+    readProperty(device.serial, 'ro.product.model'),
+    readProperty(device.serial, 'ro.build.version.release'),
+    readProperty(device.serial, 'ro.build.version.sdk'),
+    readBattery(device.serial),
+    readStorage(device.serial),
+  ]);
+  return {
+    serial: device.serial,
+    manufacturer: manufacturer || null,
+    model: model || device.metadata.model?.replaceAll('_', ' ') || null,
+    androidVersion: androidVersion || null,
+    sdk: sdk ? Number(sdk) : null,
+    battery,
+    storage,
+  };
+}
+
+export async function getUserApplications(serial) {
+  const device = await requireReadyDevice(serial);
+  return listUserPackages(device.serial);
+}
+
+export async function launchApplication(serial, packageName) {
+  const device = await requireReadyDevice(serial);
+  const normalizedPackage = normalizePackageName(packageName);
+  const result = await launchPackage(device.serial, normalizedPackage);
+  const output = `${result.stdout}\n${result.stderr}`;
+  if (result.code !== 0 || /No activities found|monkey aborted/i.test(output)) {
+    throw new Error('This package does not expose a launchable activity.');
+  }
+  return { ok: true, message: `Opened ${normalizedPackage}.` };
 }
 
 export async function pairWireless(address, code) {
