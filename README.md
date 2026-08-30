@@ -47,6 +47,22 @@ npm run devices
 node src/cli.js mirror [device-serial]
 ```
 
+## Real-device smoke test
+
+With one authorized Android device connected, run:
+
+```bash
+npm run smoke:device
+```
+
+If more than one ready device is visible to ADB, choose one explicitly:
+
+```bash
+npm run smoke:device -- --serial <device-serial>
+```
+
+The smoke test is intentionally non-destructive. It verifies ADB/scrcpy availability, device readiness, fixed device-inspection calls, a real PNG screenshot, and a short headless MP4 recording that must finalize successfully. Artifacts are kept in a temporary directory printed at the end. See `docs/REAL_DEVICE_TEST.md` for the remaining interactive UI checks.
+
 ## Run the desktop shell
 
 Prerequisites: Node.js 22+, `adb` and `scrcpy` available on `PATH`.
