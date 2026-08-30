@@ -10,6 +10,7 @@ import {
   readProperty,
   readStorage,
 } from './adb.js';
+import { interpretConnectResult, interpretPairResult } from './adbOutcome.js';
 import { doctor } from './diagnostics.js';
 import { getProfile, listProfiles } from './profiles.js';
 import { listActiveRecordings, startRecording, stopRecording } from './recordingService.js';
@@ -27,11 +28,16 @@ function actionResult(result, fallback) {
   return { ok: true, message };
 }
 
+function requireWirelessOutcome(outcome) {
+  if (!outcome.ok) throw new Error(outcome.message || 'Wireless ADB operation failed.');
+  return outcome;
+}
+
 export async function getDeviceSnapshot() {
   const report = await doctor();
   const devices = report.probes.devices.ok ? report.probes.devices.details : [];
   const capabilities = report.probes.scrcpy.ok
-    ? await getScrcpyCapabilities()
+    ? await getScrcpyCapabilities({ refresh: true })
     : { newDisplay: false, flexDisplay: false, startApp: false };
   const compatibleVirtualPresets = listVirtualWorkspacePresets().filter((preset) =>
     canLaunchVirtualWorkspace(capabilities, getVirtualWorkspacePreset(preset.id)));
@@ -131,12 +137,12 @@ export async function launchApplicationInVirtualWorkspace(serial, packageName, p
 
 export async function pairWireless(address, code) {
   const result = await pair(normalizeAddress(address), normalizePairCode(code));
-  return actionResult(result, 'Pairing completed.');
+  return requireWirelessOutcome(interpretPairResult(result));
 }
 
 export async function connectWireless(address) {
   const result = await connect(normalizeAddress(address));
-  return actionResult(result, 'Connection completed.');
+  return requireWirelessOutcome(interpretConnectResult(result));
 }
 
 export async function mirrorDevice(serial, profileId = 'balanced') {
