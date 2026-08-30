@@ -19,6 +19,10 @@ function showNotice(message, kind = 'good') {
 
 function layoutToolbar(enabled) {
   if (!appToolbar) return;
+  if (window.innerWidth <= 980) {
+    appToolbar.style.gridTemplateColumns = '1fr';
+    return;
+  }
   appToolbar.style.gridTemplateColumns = enabled
     ? 'minmax(160px,.75fr) minmax(190px,1.15fr) minmax(160px,.75fr) auto'
     : '';
@@ -99,9 +103,5 @@ async function refreshCapability() {
 const observer = new MutationObserver(enhanceAppRows);
 if (appList) observer.observe(appList, { childList: true });
 refreshButton?.addEventListener('click', () => setTimeout(() => { void refreshCapability(); }, 350));
-window.addEventListener('resize', () => {
-  if (!appToolbar) return;
-  if (window.innerWidth <= 980) appToolbar.style.gridTemplateColumns = '1fr';
-  else layoutToolbar(virtualWorkspace.available && Boolean(virtualWorkspace.presets?.length));
-});
+window.addEventListener('resize', () => layoutToolbar(virtualWorkspace.available && Boolean(virtualWorkspace.presets?.length)));
 void refreshCapability();
