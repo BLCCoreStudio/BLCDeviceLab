@@ -10,6 +10,7 @@ permissions:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -22,5 +23,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run check
       - run: npm test
+      - name: Electron binary smoke (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npx --no-install electron --version
       - name: Electron binary smoke
+        if: runner.os != 'Linux'
         run: npx --no-install electron --version
