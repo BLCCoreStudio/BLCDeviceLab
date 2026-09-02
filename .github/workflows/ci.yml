@@ -26,14 +26,17 @@ jobs:
       - name: Install Linux display smoke dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb xauth
-      - name: Configure Electron SUID sandbox
-        if: runner.os == 'Linux'
-        run: |
-          sudo chown root:root node_modules/electron/dist/chrome-sandbox
-          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - name: Electron binary smoke (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum npx --no-install electron --version
+        shell: bash
+        run: |
+          ELECTRON_PATH="$(node -p "require('electron')")"
+          SANDBOX_PATH="$(dirname "$ELECTRON_PATH")/chrome-sandbox"
+          test -x "$ELECTRON_PATH"
+          test -f "$SANDBOX_PATH"
+          sudo chown root:root "$SANDBOX_PATH"
+          sudo chmod 4755 "$SANDBOX_PATH"
+          xvfb-run --auto-servernum "$ELECTRON_PATH" --version
       - name: Electron binary smoke
         if: runner.os != 'Linux'
         run: npx --no-install electron --version
