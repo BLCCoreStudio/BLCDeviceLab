@@ -26,14 +26,14 @@ jobs:
         shell: bash
         run: |
           set +e
-          npm test > ci-test.log 2>&1
+          npm test > ci-test.txt 2>&1
           status=$?
-          echo "exit_status=$status" >> ci-test.log
+          echo "exit_status=$status" >> ci-test.txt
           exit 0
       - name: Commit diagnostics
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ci-test.log
+          git add -f ci-test.txt
           git commit -m "ci: capture failing DeviceLab test output"
           git push origin HEAD:fix/runtime-ci-hardening
