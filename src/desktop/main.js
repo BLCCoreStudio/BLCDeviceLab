@@ -23,8 +23,10 @@ import { readCaptureHistory, upsertCaptureHistory } from '../core/captureHistory
 import { onRecordingEnded } from '../core/recordingService.js';
 import { readWorkspaceSession, writeWorkspaceSession } from '../core/workspaceSession.js';
 import { normalizeAddress, normalizeSerial } from '../shared/validation.js';
+import { assertTrustedRendererEvent, isTrustedRendererUrl } from './security.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const RENDERER_ENTRY = join(__dirname, 'renderer', 'index.html');
 const MONITOR_INTERVAL_MS = 2500;
 const RECONNECT_CHECK_MS = 5000;
 const RECONNECT_COOLDOWN_MS = 15000;
@@ -139,15 +141,22 @@ function stopBackgroundDeviceServices() {
   reconnectTimer = undefined;
 }
 
+function trustedHandle(channel, listener) {
+  ipcMain.handle(channel, (event, ...args) => {
+    assertTrustedRendererEvent(event, RENDERER_ENTRY, mainWindow?.webContents.id);
+    return listener(event, ...args);
+  });
+}
+
 function registerIpc() {
-  ipcMain.handle('device:snapshot', () => safeAction(async () => ({ ok: true, data: await getDeviceSnapshot() })));
-  ipcMain.handle('device:details', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getDeviceDetails(payload.serial) })));
-  ipcMain.handle('device:apps', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getUserApplications(payload.serial) })));
-  ipcMain.handle('device:launch-app', (_event, payload = {}) => safeAction(() => launchApplication(payload.serial, payload.packageName)));
-  ipcMain.handle('device:launch-virtual-app', (_event, payload = {}) => safeAction(() =>
+  trustedHandle('device:snapshot', () => safeAction(async () => ({ ok: true, data: await getDeviceSnapshot() })));
+  trustedHandle('device:details', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getDeviceDetails(payload.serial) })));
+  trustedHandle('device:apps', (_event, payload = {}) => safeAction(async () => ({ ok: true, data: await getUserApplications(payload.serial) })));
+  trustedHandle('device:launch-app', (_event, payload = {}) => safeAction(() => launchApplication(payload.serial, payload.packageName)));
+  trustedHandle('device:launch-virtual-app', (_event, payload = {}) => safeAction(() =>
     launchApplicationInVirtualWorkspace(payload.serial, payload.packageName, payload.preset)));
-  ipcMain.handle('device:pair', (_event, payload = {}) => safeAction(() => pairWireless(payload.address, payload.code)));
-  ipcMain.handle('device:connect', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('device:pair', (_event, payload = {}) => safeAction(() => pairWireless(payload.address, payload.code)));
+  trustedHandle('device:connect', (_event, payload = {}) => safeAction(async () => {
     const address = normalizeAddress(payload.address);
     const result = await connectWireless(address);
     knownWirelessEndpoints.add(address);
@@ -156,20 +165,20 @@ function registerIpc() {
     await deviceMonitor?.poll({ force: true });
     return result;
   }));
-  ipcMain.handle('device:mirror', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('device:mirror', (_event, payload = {}) => safeAction(async () => {
     const result = await mirrorDevice(payload.serial, payload.profile);
     await saveWorkspacePreferences({ preferredSerial: payload.serial, preferredProfile: payload.profile });
     return result;
   }));
-  ipcMain.handle('workspace:session', () => safeAction(async () => ({ ok: true, data: await readWorkspaceSession(workspaceSessionPath()) })));
-  ipcMain.handle('workspace:update', (_event, payload = {}) => safeAction(async () => ({
+  trustedHandle('workspace:session', () => safeAction(async () => ({ ok: true, data: await readWorkspaceSession(workspaceSessionPath()) })));
+  trustedHandle('workspace:update', (_event, payload = {}) => safeAction(async () => ({
     ok: true,
     data: await saveWorkspacePreferences({
       preferredSerial: payload.preferredSerial,
       preferredProfile: payload.preferredProfile,
     }),
   })));
-  ipcMain.handle('device:install-apk', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('device:install-apk', (_event, payload = {}) => safeAction(async () => {
     const serial = normalizeSerial(payload.serial);
     const selection = await dialog.showOpenDialog(mainWindow, {
       title: 'Choose an APK to install',
@@ -180,7 +189,7 @@ function registerIpc() {
     return installPackage(serial, selection.filePaths[0]);
   }));
 
-  ipcMain.handle('capture:screenshot', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('capture:screenshot', (_event, payload = {}) => safeAction(async () => {
     const serial = normalizeSerial(payload.serial);
     const stamp = new Date().toISOString().replaceAll(':', '-').replace(/\.\d{3}Z$/, 'Z');
     const selection = await dialog.showSaveDialog(mainWindow, {
@@ -203,7 +212,7 @@ function registerIpc() {
     return { ok: true, entry: captureView(entry) };
   }));
 
-  ipcMain.handle('capture:start-recording', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('capture:start-recording', (_event, payload = {}) => safeAction(async () => {
     const serial = normalizeSerial(payload.serial);
     const stamp = new Date().toISOString().replaceAll(':', '-').replace(/\.\d{3}Z$/, 'Z');
     const selection = await dialog.showSaveDialog(mainWindow, {
@@ -221,13 +230,13 @@ function registerIpc() {
     return { ok: true, recording: captureView(entry) };
   }));
 
-  ipcMain.handle('capture:stop-recording', (_event, payload = {}) => safeAction(async () => {
+  trustedHandle('capture:stop-recording', (_event, payload = {}) => safeAction(async () => {
     const recording = await stopDeviceRecording(String(payload.id || ''));
     const entry = await persistRecording(recording);
     return { ok: true, recording: captureView(entry) };
   }));
 
-  ipcMain.handle('capture:state', () => safeAction(async () => {
+  trustedHandle('capture:state', () => safeAction(async () => {
     const history = await readCaptureHistory(captureHistoryPath());
     return {
       ok: true,
@@ -260,19 +269,19 @@ function createWindow() {
 
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('file://')) event.preventDefault();
+    if (!isTrustedRendererUrl(url, RENDERER_ENTRY)) event.preventDefault();
   });
 
-  mainWindow.loadFile(join(__dirname, 'renderer', 'index.html'));
+  mainWindow.loadFile(RENDERER_ENTRY);
   mainWindow.on('closed', () => { mainWindow = undefined; });
 }
 
 app.whenReady().then(() => {
+  createWindow();
   registerIpc();
   onRecordingEnded((recording) => {
     persistRecording(recording).catch(() => {});
   });
-  createWindow();
   startBackgroundDeviceServices();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
