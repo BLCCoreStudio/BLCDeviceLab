@@ -23,6 +23,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run check
       - run: npm test
+      - name: Install Linux display smoke dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb xauth
       - name: Electron binary smoke (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum npx --no-install electron --version
