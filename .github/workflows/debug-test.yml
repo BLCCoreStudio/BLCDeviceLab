@@ -1,0 +1,39 @@
+name: One-shot test diagnostics
+
+on:
+  push:
+    branches:
+      - fix/runtime-ci-hardening
+    paths:
+      - .github/workflows/debug-test.yml
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: fix/runtime-ci-hardening
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Capture tests
+        shell: bash
+        run: |
+          set +e
+          npm test > ci-test.log 2>&1
+          status=$?
+          echo "exit_status=$status" >> ci-test.log
+          exit 0
+      - name: Commit diagnostics
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci-test.log
+          git commit -m "ci: capture failing DeviceLab test output"
+          git push origin HEAD:fix/runtime-ci-hardening
