@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readCaptureHistory, upsertCaptureHistory } from '../src/core/captureHistory.js';
 import { assertCapturePath } from '../src/core/capturePath.js';
-import { buildRecordingScrcpyOptions } from '../src/core/recordingService.js';
+import { buildRecordingScrcpyOptions, createRecordingEndWaiter } from '../src/core/recordingService.js';
 import { buildScrcpyArgs } from '../src/core/scrcpy.js';
 
 test('capture paths are constrained by artifact type', () => {
@@ -54,6 +55,22 @@ test('headless recording removes stay-awake when control is disabled', () => {
   assert.equal(interactive.noControl, false);
   assert.equal(interactive.stayAwake, true);
   assert.match(buildScrcpyArgs(interactive).join(' '), /--stay-awake/);
+});
+
+test('recording end waiter removes its listener after timeout', async () => {
+  const eventBus = new EventEmitter();
+  const waiter = createRecordingEndWaiter('recording-1', 5, eventBus);
+  assert.equal(eventBus.listenerCount('ended'), 1);
+  await assert.rejects(waiter.promise, /still finalizing/);
+  assert.equal(eventBus.listenerCount('ended'), 0);
+});
+
+test('recording end waiter can be cancelled without leaking listeners', () => {
+  const eventBus = new EventEmitter();
+  const waiter = createRecordingEndWaiter('recording-1', 1000, eventBus);
+  assert.equal(eventBus.listenerCount('ended'), 1);
+  waiter.cancel();
+  assert.equal(eventBus.listenerCount('ended'), 0);
 });
 
 test('capture history is local, bounded and upserts by id', async () => {
