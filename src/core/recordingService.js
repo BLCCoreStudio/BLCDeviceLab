@@ -22,6 +22,48 @@ export function onRecordingEnded(listener) {
   return () => events.off('ended', listener);
 }
 
+export function createRecordingEndWaiter(id, timeoutMs = 5000, eventBus = events) {
+  let settled = false;
+  let timer;
+
+  const cleanup = () => {
+    eventBus.off('ended', handler);
+    if (timer) clearTimeout(timer);
+  };
+
+  const handler = (result) => {
+    if (result.id !== id || settled) return;
+    settled = true;
+    cleanup();
+    resolvePromise(result);
+  };
+
+  let resolvePromise;
+  let rejectPromise;
+  const promise = new Promise((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  eventBus.on('ended', handler);
+  timer = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    rejectPromise(new Error('Recording is still finalizing. Try again in a moment.'));
+  }, timeoutMs);
+  timer.unref?.();
+
+  return {
+    promise,
+    cancel() {
+      if (settled) return;
+      settled = true;
+      cleanup();
+    },
+  };
+}
+
 export function buildRecordingScrcpyOptions({ serial, filePath, profileId = 'balanced', withPlayback = true }) {
   assertCapturePath(filePath, 'recording');
   const profile = getProfile(profileId);
@@ -99,20 +141,12 @@ export async function stopRecording(id) {
   const recording = recordings.get(id);
   if (!recording) throw new Error('That recording is no longer active.');
 
-  const ended = new Promise((resolve) => {
-    const handler = (result) => {
-      if (result.id !== id) return;
-      events.off('ended', handler);
-      resolve(result);
-    };
-    events.on('ended', handler);
-  });
-
+  const waiter = createRecordingEndWaiter(id);
   const signaled = recording.child.kill('SIGINT');
-  if (!signaled) throw new Error('Could not stop the recording process.');
+  if (!signaled) {
+    waiter.cancel();
+    throw new Error('Could not stop the recording process.');
+  }
 
-  return Promise.race([
-    ended,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Recording is still finalizing. Try again in a moment.')), 5000)),
-  ]);
+  return waiter.promise;
 }
