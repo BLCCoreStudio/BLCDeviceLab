@@ -52,7 +52,6 @@ export function createRecordingEndWaiter(id, timeoutMs = 5000, eventBus = events
     cleanup();
     rejectPromise(new Error('Recording is still finalizing. Try again in a moment.'));
   }, timeoutMs);
-  timer.unref?.();
 
   return {
     promise,
