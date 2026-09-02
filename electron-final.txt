@@ -1,0 +1,14 @@
+electron_path=Downloading Electron binary...
+/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/electron
+sandbox_path=Downloading Electron binary...
+/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/chrome-sandbox
+ls: cannot access 'Downloading Electron binary...'$'\n''/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/electron': No such file or directory
+ls: cannot access 'Downloading Electron binary...'$'\n''/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/chrome-sandbox': No such file or directory
+chown: cannot access 'Downloading Electron binary...'$'\n''/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/chrome-sandbox': No such file or directory
+chown_status=1
+chmod: cannot access 'Downloading Electron binary...'$'\n''/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/chrome-sandbox': No such file or directory
+chmod_status=1
+ls: cannot access 'Downloading Electron binary...'$'\n''/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/chrome-sandbox': No such file or directory
+/usr/bin/xvfb-run: 184: Downloading Electron binary...
+/home/runner/work/BLCDeviceLab/BLCDeviceLab/node_modules/electron/dist/electron: not found
+electron_status=127
