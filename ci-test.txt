@@ -1,0 +1,339 @@
+
+> blc-device-lab@0.6.0-alpha.3 test
+> node --test
+
+TAP version 13
+# Subtest: parseDevices parses multiple adb device states and metadata
+ok 1 - parseDevices parses multiple adb device states and metadata
+  ---
+  duration_ms: 3.189302
+  type: 'test'
+  ...
+# Subtest: parseDevices keeps duplicate mDNS service suffixes inside the serial
+ok 2 - parseDevices keeps duplicate mDNS service suffixes inside the serial
+  ---
+  duration_ms: 0.305288
+  type: 'test'
+  ...
+# Subtest: parseDevices returns empty array for unexpected output
+ok 3 - parseDevices returns empty array for unexpected output
+  ---
+  duration_ms: 0.233305
+  type: 'test'
+  ...
+# Subtest: wireless connect requires an explicit adb success message
+ok 4 - wireless connect requires an explicit adb success message
+  ---
+  duration_ms: 1.654062
+  type: 'test'
+  ...
+# Subtest: wireless pairing requires adb confirmation
+ok 5 - wireless pairing requires adb confirmation
+  ---
+  duration_ms: 0.414241
+  type: 'test'
+  ...
+# Subtest: capture paths are constrained by artifact type
+ok 6 - capture paths are constrained by artifact type
+  ---
+  duration_ms: 1.317256
+  type: 'test'
+  ...
+# Subtest: recording arguments use scrcpy record mode without shell strings
+ok 7 - recording arguments use scrcpy record mode without shell strings
+  ---
+  duration_ms: 0.992967
+  type: 'test'
+  ...
+# Subtest: headless recording removes stay-awake when control is disabled
+ok 8 - headless recording removes stay-awake when control is disabled
+  ---
+  duration_ms: 0.441471
+  type: 'test'
+  ...
+# Subtest: recording end waiter removes its listener after timeout
+not ok 9 - recording end waiter removes its listener after timeout
+  ---
+  duration_ms: 4.530313
+  type: 'test'
+  location: '/home/runner/work/BLCDeviceLab/BLCDeviceLab/test/capture.test.js:60:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: recording end waiter can be cancelled without leaking listeners
+not ok 10 - recording end waiter can be cancelled without leaking listeners
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/runner/work/BLCDeviceLab/BLCDeviceLab/test/capture.test.js:68:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: capture history is local, bounded and upserts by id
+not ok 11 - capture history is local, bounded and upserts by id
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/home/runner/work/BLCDeviceLab/BLCDeviceLab/test/capture.test.js:76:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: spawnPersistentChecked resolves only after a process survives startup
+ok 12 - spawnPersistentChecked resolves only after a process survives startup
+  ---
+  duration_ms: 105.090629
+  type: 'test'
+  ...
+# Subtest: spawnPersistentChecked rejects a missing executable instead of leaking an error event
+ok 13 - spawnPersistentChecked rejects a missing executable instead of leaking an error event
+  ---
+  duration_ms: 3.148768
+  type: 'test'
+  ...
+# Subtest: spawnPersistentChecked surfaces stderr when a process dies during startup
+ok 14 - spawnPersistentChecked surfaces stderr when a process dies during startup
+  ---
+  duration_ms: 35.722369
+  type: 'test'
+  ...
+# Subtest: desktop renderer keeps a strict local content security policy
+ok 15 - desktop renderer keeps a strict local content security policy
+  ---
+  duration_ms: 6.884784
+  type: 'test'
+  ...
+# Subtest: sandboxed preload uses Electron-compatible CommonJS and exposes only the narrow bridge
+ok 16 - sandboxed preload uses Electron-compatible CommonJS and exposes only the narrow bridge
+  ---
+  duration_ms: 3.186568
+  type: 'test'
+  ...
+# Subtest: desktop keeps renderer sandbox and context isolation enabled
+ok 17 - desktop keeps renderer sandbox and context isolation enabled
+  ---
+  duration_ms: 1.302297
+  type: 'test'
+  ...
+# Subtest: parseBattery normalizes Android dumpsys battery output
+ok 18 - parseBattery normalizes Android dumpsys battery output
+  ---
+  duration_ms: 1.318754
+  type: 'test'
+  ...
+# Subtest: parseStorage extracts byte totals from df -k
+ok 19 - parseStorage extracts byte totals from df -k
+  ---
+  duration_ms: 0.415107
+  type: 'test'
+  ...
+# Subtest: parsePackages deduplicates and sorts package identifiers
+ok 20 - parsePackages deduplicates and sorts package identifiers
+  ---
+  duration_ms: 9.729482
+  type: 'test'
+  ...
+# Subtest: diffDevices reports connect, disconnect and state transitions
+ok 21 - diffDevices reports connect, disconnect and state transitions
+  ---
+  duration_ms: 1.57841
+  type: 'test'
+  ...
+# Subtest: diffDevices keeps one physical device stable when its preferred transport changes
+ok 22 - diffDevices keeps one physical device stable when its preferred transport changes
+  ---
+  duration_ms: 0.189446
+  type: 'test'
+  ...
+# Subtest: planReconnects only retries missing endpoints after cooldown
+ok 23 - planReconnects only retries missing endpoints after cooldown
+  ---
+  duration_ms: 0.313668
+  type: 'test'
+  ...
+# Subtest: planReconnects recognizes a ready wireless endpoint nested under a logical device
+ok 24 - planReconnects recognizes a ready wireless endpoint nested under a logical device
+  ---
+  duration_ms: 1.260424
+  type: 'test'
+  ...
+# Subtest: DeviceMonitor emits only meaningful changes after initial scan
+ok 25 - DeviceMonitor emits only meaningful changes after initial scan
+  ---
+  duration_ms: 0.983615
+  type: 'test'
+  ...
+# Subtest: hardwareSerialFromMdns extracts the adb hardware serial including duplicate service names
+ok 26 - hardwareSerialFromMdns extracts the adb hardware serial including duplicate service names
+  ---
+  duration_ms: 1.082717
+  type: 'test'
+  ...
+# Subtest: transportType distinguishes usb direct wifi and mdns wifi
+ok 27 - transportType distinguishes usb direct wifi and mdns wifi
+  ---
+  duration_ms: 0.327321
+  type: 'test'
+  ...
+# Subtest: collapseDevices represents usb direct wifi and mdns aliases as one physical device
+ok 28 - collapseDevices represents usb direct wifi and mdns aliases as one physical device
+  ---
+  duration_ms: 1.342966
+  type: 'test'
+  ...
+# Subtest: collapseDevices prefers direct wifi after usb disappears
+ok 29 - collapseDevices prefers direct wifi after usb disappears
+  ---
+  duration_ms: 1.211852
+  type: 'test'
+  ...
+# Subtest: collapseDevices does not merge ambiguous identical-model phones without a physical anchor
+ok 30 - collapseDevices does not merge ambiguous identical-model phones without a physical anchor
+  ---
+  duration_ms: 0.38057
+  type: 'test'
+  ...
+# Subtest: profiles expose only known public ids
+ok 31 - profiles expose only known public ids
+  ---
+  duration_ms: 1.884321
+  type: 'test'
+  ...
+# Subtest: balanced profile maps to constrained scrcpy options
+ok 32 - balanced profile maps to constrained scrcpy options
+  ---
+  duration_ms: 0.286131
+  type: 'test'
+  ...
+# Subtest: selectReadyDevice chooses the only ready device
+ok 33 - selectReadyDevice chooses the only ready device
+  ---
+  duration_ms: 0.918632
+  type: 'test'
+  ...
+# Subtest: selectReadyDevice requires an explicit serial when several devices are ready
+ok 34 - selectReadyDevice requires an explicit serial when several devices are ready
+  ---
+  duration_ms: 0.466658
+  type: 'test'
+  ...
+# Subtest: selectReadyDevice rejects a requested unauthorized device
+ok 35 - selectReadyDevice rejects a requested unauthorized device
+  ---
+  duration_ms: 0.15147
+  type: 'test'
+  ...
+# Subtest: hasPngSignature recognizes the PNG magic bytes
+ok 36 - hasPngSignature recognizes the PNG magic bytes
+  ---
+  duration_ms: 0.221233
+  type: 'test'
+  ...
+# Subtest: buildScrcpyArgs only emits requested options
+ok 37 - buildScrcpyArgs only emits requested options
+  ---
+  duration_ms: 1.321026
+  type: 'test'
+  ...
+# Subtest: desktop main routes IPC and navigation through the renderer trust boundary
+ok 38 - desktop main routes IPC and navigation through the renderer trust boundary
+  ---
+  duration_ms: 6.207911
+  type: 'test'
+  ...
+# Subtest: renderer trust accepts only the configured local entry and expected webContents
+ok 39 - renderer trust accepts only the configured local entry and expected webContents
+  ---
+  duration_ms: 0.711774
+  type: 'test'
+  ...
+# Subtest: normalizeAddress accepts common wireless debugging addresses
+ok 40 - normalizeAddress accepts common wireless debugging addresses
+  ---
+  duration_ms: 0.735473
+  type: 'test'
+  ...
+# Subtest: normalizeAddress rejects missing or invalid ports
+ok 41 - normalizeAddress rejects missing or invalid ports
+  ---
+  duration_ms: 0.318831
+  type: 'test'
+  ...
+# Subtest: pair codes and serials are constrained before reaching process calls
+ok 42 - pair codes and serials are constrained before reaching process calls
+  ---
+  duration_ms: 0.198962
+  type: 'test'
+  ...
+# Subtest: package names are validated before application launch
+ok 43 - package names are validated before application launch
+  ---
+  duration_ms: 0.187523
+  type: 'test'
+  ...
+# Subtest: virtual workspace capability detection is based on actual scrcpy help flags
+ok 44 - virtual workspace capability detection is based on actual scrcpy help flags
+  ---
+  duration_ms: 1.029374
+  type: 'test'
+  ...
+# Subtest: virtual workspace exposes only constrained product presets
+ok 45 - virtual workspace exposes only constrained product presets
+  ---
+  duration_ms: 0.401753
+  type: 'test'
+  ...
+# Subtest: responsive preset requires flex display support while fixed presets do not
+ok 46 - responsive preset requires flex display support while fixed presets do not
+  ---
+  duration_ms: 0.191423
+  type: 'test'
+  ...
+# Subtest: virtual workspace scrcpy arguments stay structured and explicit
+ok 47 - virtual workspace scrcpy arguments stay structured and explicit
+  ---
+  duration_ms: 0.182163
+  type: 'test'
+  ...
+# Subtest: workspace session sanitizes stale and unknown values
+ok 48 - workspace session sanitizes stale and unknown values
+  ---
+  duration_ms: 1.481265
+  type: 'test'
+  ...
+# Subtest: workspace session persists only validated product preferences
+ok 49 - workspace session persists only validated product preferences
+  ---
+  duration_ms: 6.445578
+  type: 'test'
+  ...
+# Subtest: workspace session falls back safely when JSON is corrupted
+ok 50 - workspace session falls back safely when JSON is corrupted
+  ---
+  duration_ms: 2.369419
+  type: 'test'
+  ...
+# Subtest: partial workspace updates preserve the other preference
+ok 51 - partial workspace updates preserve the other preference
+  ---
+  duration_ms: 1.730442
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 48
+# fail 0
+# cancelled 3
+# skipped 0
+# todo 0
+# duration_ms 381.482317
+exit_status=1
